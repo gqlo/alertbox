@@ -1,4 +1,4 @@
-package alertbox
+package store
 
 import (
 	"context"

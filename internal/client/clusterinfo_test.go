@@ -1,12 +1,10 @@
-package alertbox_test
+package client
 
 import (
 	"context"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/gqlo/alertbox"
 )
 
 func TestFetchClusterMeta_fromFakeOc(t *testing.T) {
@@ -39,7 +37,7 @@ esac
 	}
 	t.Setenv("PATH", dir)
 
-	meta := alertbox.FetchClusterMeta(context.Background())
+	meta := FetchClusterMeta(context.Background())
 	if meta.MasterNodes != "1" {
 		t.Errorf("MasterNodes = %q, want 1", meta.MasterNodes)
 	}

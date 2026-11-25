@@ -1,4 +1,4 @@
-package alertbox
+package server
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 const (
@@ -27,25 +29,25 @@ func snapshotRefreshInterval() time.Duration {
 }
 
 type filteredAlertView struct {
-	alerts                []StoredAlert
-	namespaceRanks        []NamespaceAlertRank
-	namespaces            []string
-	hasEmptyNamespace     bool
-	computedAt            time.Time
+	alerts            []store.StoredAlert
+	namespaceRanks    []NamespaceAlertRank
+	namespaces        []string
+	hasEmptyNamespace bool
+	computedAt        time.Time
 }
 
 type AlertSnapshotView struct {
-	Alerts                []StoredAlert
-	NamespaceRanks        []NamespaceAlertRank
-	Namespaces            []string
-	HasEmptyNamespace     bool
+	Alerts            []store.StoredAlert
+	NamespaceRanks    []NamespaceAlertRank
+	Namespaces        []string
+	HasEmptyNamespace bool
 }
 
 type AlertSnapshotCache struct {
-	store *AlertStore
+	store *store.AlertStore
 
 	mu       sync.RWMutex
-	alerts   []StoredAlert
+	alerts   []store.StoredAlert
 	loadedAt time.Time
 
 	filterMu    sync.RWMutex
@@ -55,7 +57,7 @@ type AlertSnapshotCache struct {
 	stopCh    chan struct{}
 }
 
-func newAlertSnapshotCache(store *AlertStore) *AlertSnapshotCache {
+func newAlertSnapshotCache(store *store.AlertStore) *AlertSnapshotCache {
 	return &AlertSnapshotCache{
 		store:       store,
 		filterStats: make(map[string]filteredAlertView),
@@ -65,7 +67,7 @@ func newAlertSnapshotCache(store *AlertStore) *AlertSnapshotCache {
 }
 
 // NewAlertSnapshotCacheForTest builds a snapshot cache without starting the background refresher.
-func NewAlertSnapshotCacheForTest(store *AlertStore) *AlertSnapshotCache {
+func NewAlertSnapshotCacheForTest(store *store.AlertStore) *AlertSnapshotCache {
 	return newAlertSnapshotCache(store)
 }
 
@@ -137,7 +139,7 @@ func (c *AlertSnapshotCache) Total() int {
 	return len(c.alerts)
 }
 
-func (c *AlertSnapshotCache) getByID(id string) *StoredAlert {
+func (c *AlertSnapshotCache) getByID(id string) *store.StoredAlert {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	for i := range c.alerts {

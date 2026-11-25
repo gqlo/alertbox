@@ -1,16 +1,11 @@
-package alertbox
+package client
 
 import (
 	"context"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
-	"time"
 )
-
-const clusterMetaTTL = 5 * time.Minute
 
 // ClusterMeta holds OpenShift cluster summary info for the dashboard sidebar.
 type ClusterMeta struct {
@@ -21,7 +16,8 @@ type ClusterMeta struct {
 	ODFVersion  string
 }
 
-func (m ClusterMeta) empty() bool {
+// Empty reports whether no cluster metadata fields are populated.
+func (m ClusterMeta) Empty() bool {
 	return m.MasterNodes == "" && m.WorkerNodes == "" && m.OCPVersion == "" && m.CNVVersion == "" && m.ODFVersion == ""
 }
 
@@ -149,59 +145,4 @@ func fetchODFVersion(ctx context.Context) string {
 		}
 	}
 	return ""
-}
-
-func (s *Server) cachedClusterMeta() ClusterMeta {
-	s.clusterMetaMu.RLock()
-	if !s.clusterMetaAt.IsZero() && time.Since(s.clusterMetaAt) < clusterMetaTTL {
-		meta := s.clusterMeta
-		s.clusterMetaMu.RUnlock()
-		return meta
-	}
-	stale := s.clusterMeta
-	s.clusterMetaMu.RUnlock()
-
-	s.triggerClusterMetaRefresh()
-	return stale
-}
-
-func (s *Server) refreshClusterMetaLoop() {
-	s.refreshClusterMeta()
-
-	ticker := time.NewTicker(clusterMetaTTL)
-	defer ticker.Stop()
-	for range ticker.C {
-		s.refreshClusterMeta()
-	}
-}
-
-func (s *Server) triggerClusterMetaRefresh() {
-	go s.refreshClusterMeta()
-}
-
-func (s *Server) refreshClusterMeta() {
-	if !atomic.CompareAndSwapInt32(&s.clusterMetaRefreshing, 0, 1) {
-		return
-	}
-	defer atomic.StoreInt32(&s.clusterMetaRefreshing, 0)
-
-	metaCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := ensureClusterAuthToken(); err != nil {
-		log.Printf("cluster meta: token: %v", err)
-	}
-
-	meta := FetchClusterMeta(metaCtx)
-	if meta.empty() {
-		if resolveOcBinary() != "" {
-			log.Print("cluster meta: oc queries returned no data (check oc login and permissions)")
-		}
-		return
-	}
-
-	s.clusterMetaMu.Lock()
-	s.clusterMeta = meta
-	s.clusterMetaAt = time.Now()
-	s.clusterMetaMu.Unlock()
 }

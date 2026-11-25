@@ -1,4 +1,4 @@
-package alertbox
+package client
 
 import (
 	"context"
@@ -192,32 +192,4 @@ func waitForPort(port int, timeout time.Duration) error {
 		time.Sleep(200 * time.Millisecond)
 	}
 	return context.DeadlineExceeded
-}
-
-// AlertmanagerPFConfig holds port-forward target configuration.
-type AlertmanagerPFConfig struct {
-	Namespace  string
-	Service    string
-	LocalPort  int
-	RemotePort int
-}
-
-// ShouldStartAlertmanagerPortForward reports whether auto port-forward should run.
-func ShouldStartAlertmanagerPortForward() bool { return shouldStartAlertmanagerPortForward() }
-
-// IsLocalhostAlertmanagerURL reports whether baseURL targets local port-forward.
-func IsLocalhostAlertmanagerURL(baseURL string) bool { return isLocalhostAlertmanagerURL(baseURL) }
-
-// AlertmanagerPortForwardConfig reads port-forward env configuration.
-func AlertmanagerPortForwardConfig() (AlertmanagerPFConfig, error) {
-	cfg, err := alertmanagerPortForwardConfig()
-	if err != nil {
-		return AlertmanagerPFConfig{}, err
-	}
-	return AlertmanagerPFConfig{
-		Namespace:  cfg.namespace,
-		Service:    cfg.service,
-		LocalPort:  cfg.localPort,
-		RemotePort: cfg.remotePort,
-	}, nil
 }

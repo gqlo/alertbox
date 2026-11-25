@@ -1,4 +1,4 @@
-package alertbox
+package client
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 const DefaultAlertmanagerURL = "https://localhost:9094"
@@ -56,9 +58,11 @@ type amAlert struct {
 	} `json:"status"`
 }
 
-type alertmanagerPollSession struct {
+// PollSession runs the background Alertmanager polling loop and owns the
+// optional port-forward used to reach a local Alertmanager.
+type PollSession struct {
 	mu            sync.Mutex
-	store         *AlertStore
+	store         *store.AlertStore
 	client        *alertmanagerClient
 	pf            *alertmanagerPortForward
 	pfOwned       bool
@@ -249,7 +253,9 @@ func parsePollInterval() time.Duration {
 	return d
 }
 
-func newAlertmanagerPollSession(store *AlertStore) (*alertmanagerPollSession, error) {
+// NewPollSession builds a polling session for the given store, or returns
+// (nil, nil) when Alertmanager polling is disabled.
+func NewPollSession(st *store.AlertStore) (*PollSession, error) {
 	client, err := newAlertmanagerClient()
 	if err != nil {
 		return nil, err
@@ -263,15 +269,16 @@ func newAlertmanagerPollSession(store *AlertStore) (*alertmanagerPollSession, er
 		log.Printf("WARNING: Alertmanager port-forward: %v", err)
 	}
 
-	return &alertmanagerPollSession{
-		store:   store,
+	return &PollSession{
+		store:   st,
 		client:  client,
 		pf:      pf,
 		pfOwned: pf != nil,
 	}, nil
 }
 
-func (s *alertmanagerPollSession) run() {
+// Run polls Alertmanager on an interval until the process exits.
+func (s *PollSession) Run() {
 	interval := parsePollInterval()
 	log.Printf("Alertmanager polling enabled: %s every %s", s.client.baseURL, interval)
 
@@ -289,15 +296,15 @@ func (s *alertmanagerPollSession) run() {
 			return
 		}
 
-		polled := make([]PolledAlert, 0, len(alerts))
+		polled := make([]store.PolledAlert, 0, len(alerts))
 		for _, a := range alerts {
 			if a.Fingerprint == "" {
 				continue
 			}
 			status := polledAlertStatus(a)
-			polled = append(polled, PolledAlert{
+			polled = append(polled, store.PolledAlert{
 				Fingerprint: a.Fingerprint,
-				Alert: Alert{
+				Alert: store.Alert{
 					Labels:       a.Labels,
 					Annotations:  a.Annotations,
 					Status:       status,
@@ -326,7 +333,8 @@ func (s *alertmanagerPollSession) run() {
 	}
 }
 
-func (s *alertmanagerPollSession) stop() {
+// Stop tears down the owned port-forward, if any.
+func (s *PollSession) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.pf != nil {
@@ -335,7 +343,7 @@ func (s *alertmanagerPollSession) stop() {
 	}
 }
 
-func (s *alertmanagerPollSession) recoverFromPollError(err error) {
+func (s *PollSession) recoverFromPollError(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -397,75 +405,4 @@ func shouldRecoverPortForward(baseURL string) bool {
 func isAlertmanagerUnauthorized(err error) bool {
 	var httpErr *alertmanagerHTTPError
 	return errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusUnauthorized
-}
-
-// AlertmanagerAlertFingerprint is a minimal alert identity returned by FetchAlertmanagerAlerts.
-type AlertmanagerAlertFingerprint struct {
-	Fingerprint string
-}
-
-// NewAlertmanagerHTTPTransport returns the HTTP transport used for Alertmanager polling.
-func NewAlertmanagerHTTPTransport(insecure bool) http.RoundTripper {
-	return newAlertmanagerHTTPTransport(insecure)
-}
-
-// FetchAlertmanagerAlerts requests the Alertmanager alerts API once.
-func FetchAlertmanagerAlerts(ctx context.Context, baseURL, token string, httpClient *http.Client) ([]AlertmanagerAlertFingerprint, error) {
-	c := &alertmanagerClient{
-		baseURL:    baseURL,
-		token:      token,
-		httpClient: httpClient,
-	}
-	alerts, err := c.FetchAlerts(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]AlertmanagerAlertFingerprint, len(alerts))
-	for i, a := range alerts {
-		out[i] = AlertmanagerAlertFingerprint{Fingerprint: a.Fingerprint}
-	}
-	return out, nil
-}
-
-// RefreshAlertmanagerHTTPClient replaces the transport on an Alertmanager HTTP client.
-func RefreshAlertmanagerHTTPClient(c *http.Client) {
-	if transport, ok := c.Transport.(*http.Transport); ok {
-		transport.CloseIdleConnections()
-	}
-	*c = http.Client{
-		Timeout:   c.Timeout,
-		Transport: newAlertmanagerHTTPTransport(alertmanagerTLSInsecure()),
-	}
-	if c.Timeout == 0 {
-		c.Timeout = alertmanagerClientTimeout
-	}
-}
-
-// IsAlertmanagerUnauthorized reports whether err is HTTP 401 from Alertmanager.
-func IsAlertmanagerUnauthorized(err error) bool {
-	return isAlertmanagerUnauthorized(err)
-}
-
-// ShouldRecoverPortForward reports whether poll failures should restart port-forward.
-func ShouldRecoverPortForward(baseURL string) bool {
-	return shouldRecoverPortForward(baseURL)
-}
-
-// AlertmanagerAlertsURL returns the alerts API URL used for polling.
-func AlertmanagerAlertsURL(baseURL string) (string, error) {
-	return alertmanagerAlertsURL(baseURL)
-}
-
-// AlertmanagerPollingEnabled reports whether Alertmanager polling is active.
-func AlertmanagerPollingEnabled() bool { return alertmanagerPollingEnabled() }
-
-// AlertmanagerURL returns the configured Alertmanager base URL.
-func AlertmanagerURL() string { return alertmanagerURL() }
-
-// AlertmanagerTLSInsecure reports whether TLS verification is skipped.
-func AlertmanagerTLSInsecure() bool { return alertmanagerTLSInsecure() }
-
-// ResolveAlertmanagerToken resolves the bearer token and its source label.
-func ResolveAlertmanagerToken() (token, source string, err error) {
-	return alertmanagerToken()
 }

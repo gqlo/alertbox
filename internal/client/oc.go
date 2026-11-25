@@ -1,4 +1,4 @@
-package alertbox
+package client
 
 import (
 	"context"
@@ -10,9 +10,14 @@ import (
 )
 
 var (
-	clusterAuthMu     sync.RWMutex
-	clusterAuthToken  string
+	clusterAuthMu    sync.RWMutex
+	clusterAuthToken string
 )
+
+// OcBinaryAvailable reports whether an oc binary can be located on this host.
+func OcBinaryAvailable() bool {
+	return resolveOcBinary() != ""
+}
 
 // SetClusterAuthToken stores the bearer token used for oc cluster queries.
 func SetClusterAuthToken(token string) {

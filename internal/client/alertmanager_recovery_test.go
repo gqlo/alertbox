@@ -1,4 +1,4 @@
-package alertbox_test
+package client
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/gqlo/alertbox"
 )
 
 func TestFetchAlerts_unauthorized(t *testing.T) {
@@ -17,14 +15,18 @@ func TestFetchAlerts_unauthorized(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := &http.Client{
-		Timeout:   5 * time.Second,
-		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
+	c := &alertmanagerClient{
+		baseURL: srv.URL,
+		token:   "old-token",
+		httpClient: &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: newAlertmanagerHTTPTransport(true),
+		},
 	}
 
-	_, err := alertbox.FetchAlertmanagerAlerts(context.Background(), srv.URL, "old-token", client)
-	if !alertbox.IsAlertmanagerUnauthorized(err) {
-		t.Fatalf("FetchAlertmanagerAlerts() error = %v, want unauthorized", err)
+	_, err := c.FetchAlerts(context.Background())
+	if !isAlertmanagerUnauthorized(err) {
+		t.Fatalf("FetchAlerts() error = %v, want unauthorized", err)
 	}
 }
 
@@ -37,14 +39,17 @@ func TestFetchAlerts_success(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := &http.Client{
-		Timeout:   5 * time.Second,
-		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
+	c := &alertmanagerClient{
+		baseURL: srv.URL,
+		httpClient: &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: newAlertmanagerHTTPTransport(true),
+		},
 	}
 
-	alerts, err := alertbox.FetchAlertmanagerAlerts(context.Background(), srv.URL, "", client)
+	alerts, err := c.FetchAlerts(context.Background())
 	if err != nil {
-		t.Fatalf("FetchAlertmanagerAlerts() error: %v", err)
+		t.Fatalf("FetchAlerts() error: %v", err)
 	}
 	if len(alerts) != 1 || alerts[0].Fingerprint != "abc123" {
 		t.Fatalf("alerts = %+v", alerts)
@@ -52,26 +57,28 @@ func TestFetchAlerts_success(t *testing.T) {
 }
 
 func TestAlertmanagerClient_refreshTransport(t *testing.T) {
-	client := &http.Client{
-		Timeout:   15 * time.Second,
-		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
+	c := &alertmanagerClient{
+		httpClient: &http.Client{
+			Timeout:   15 * time.Second,
+			Transport: newAlertmanagerHTTPTransport(true),
+		},
 	}
-	oldTransport := client.Transport
-	alertbox.RefreshAlertmanagerHTTPClient(client)
-	if client.Transport == oldTransport {
-		t.Fatal("RefreshAlertmanagerHTTPClient() did not replace transport")
+	oldTransport := c.httpClient.Transport
+	c.refreshTransport()
+	if c.httpClient.Transport == oldTransport {
+		t.Fatal("refreshTransport() did not replace transport")
 	}
 }
 
 func TestShouldRecoverPortForward(t *testing.T) {
 	t.Setenv("ALERTMANAGER_URL", "https://localhost:9094")
 	t.Setenv("ALERTMANAGER_PORT_FORWARD", "true")
-	if !alertbox.ShouldRecoverPortForward("https://localhost:9094") {
+	if !shouldRecoverPortForward("https://localhost:9094") {
 		t.Fatal("want recovery for owned localhost port-forward")
 	}
 
 	t.Setenv("ALERTMANAGER_URL", "https://alertmanager-main.openshift-monitoring.svc:9094")
-	if alertbox.ShouldRecoverPortForward("https://alertmanager-main.openshift-monitoring.svc:9094") {
+	if shouldRecoverPortForward("https://alertmanager-main.openshift-monitoring.svc:9094") {
 		t.Fatal("should not recover port-forward for in-cluster URL")
 	}
 }

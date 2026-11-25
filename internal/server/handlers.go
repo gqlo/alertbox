@@ -1,4 +1,4 @@
-package alertbox
+package server
 
 import (
 	"bytes"
@@ -11,12 +11,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gqlo/alertbox/internal/client"
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 var alertsTemplate = template.Must(template.New("alerts").Funcs(template.FuncMap{
-	"fmtRelative": FormatRelativeTime,
-	"fmtTime":     FormatAlertTime,
-	"fmtISO":      FormatTimeISO,
+	"fmtRelative": store.FormatRelativeTime,
+	"fmtTime":     store.FormatAlertTime,
+	"fmtISO":      store.FormatTimeISO,
 	"headerIntro": headerIntro,
 	"utcClock":    utcClock,
 }).Parse(`<!DOCTYPE html>
@@ -712,7 +715,7 @@ var alertsTemplate = template.Must(template.New("alerts").Funcs(template.FuncMap
 </html>`))
 
 type Server struct {
-	store      *AlertStore
+	store      *store.AlertStore
 	slackToken string
 	channelID  string
 
@@ -722,13 +725,13 @@ type Server struct {
 	snapshot *AlertSnapshotCache
 
 	clusterMetaMu         sync.RWMutex
-	clusterMeta           ClusterMeta
+	clusterMeta           client.ClusterMeta
 	clusterMetaAt         time.Time
 	clusterMetaRefreshing int32
 }
 
 // NewServer constructs an HTTP handler bundle for the dashboard and webhook.
-func NewServer(store *AlertStore, slackToken, channelID string) *Server {
+func NewServer(store *store.AlertStore, slackToken, channelID string) *Server {
 	s := &Server{
 		store:       store,
 		slackToken:  slackToken,
@@ -745,12 +748,12 @@ func NewServer(store *AlertStore, slackToken, channelID string) *Server {
 }
 
 // Store returns the alert store used by this server.
-func (s *Server) Store() *AlertStore {
+func (s *Server) Store() *store.AlertStore {
 	return s.store
 }
 
 type alertPayload struct {
-	Alerts []Alert `json:"alerts"`
+	Alerts []store.Alert `json:"alerts"`
 }
 
 func (s *Server) HandleAlertsPage(w http.ResponseWriter, r *http.Request) {
@@ -863,7 +866,7 @@ func (s *Server) SlackEnabled() bool {
 	return s.slackToken != "" && s.channelID != ""
 }
 
-func (s *Server) postAlertsToSlack(alerts []Alert) {
+func (s *Server) postAlertsToSlack(alerts []store.Alert) {
 	date := time.Now().Format("2006-01-02")
 	threadTs, err := s.getOrCreateThread(date)
 	if err != nil {
@@ -881,7 +884,7 @@ func (s *Server) postAlertsToSlack(alerts []Alert) {
 			text += fmt.Sprintf("\nRunbook: %s", u)
 		}
 
-		if _, err := postSlack(s.slackToken, s.channelID, map[string]any{
+		if _, err := client.PostSlack(s.slackToken, s.channelID, map[string]any{
 			"channel":   s.channelID,
 			"text":      text,
 			"thread_ts": threadTs,
@@ -899,7 +902,7 @@ func (s *Server) getOrCreateThread(date string) (string, error) {
 		return ts, nil
 	}
 
-	ts, err := postSlack(s.slackToken, s.channelID, map[string]any{
+	ts, err := client.PostSlack(s.slackToken, s.channelID, map[string]any{
 		"channel": s.channelID,
 		"text":    fmt.Sprintf(":bell: *OpenShift Alert Summary — %s*", date),
 	})
