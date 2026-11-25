@@ -731,16 +731,16 @@ type Server struct {
 }
 
 // NewServer constructs an HTTP handler bundle for the dashboard and webhook.
-func NewServer(store *store.AlertStore, slackToken, channelID string) *Server {
+func NewServer(st *store.AlertStore, slackToken, channelID string) *Server {
 	s := &Server{
-		store:       store,
+		store:       st,
 		slackToken:  slackToken,
 		channelID:   channelID,
 		dailyThread: map[string]string{},
 	}
-	if store != nil {
-		s.snapshot = newAlertSnapshotCache(store)
-		store.SetChangeNotifier(s.snapshot.MarkDirty)
+	if st != nil {
+		s.snapshot = newAlertSnapshotCache(st)
+		st.SetChangeNotifier(s.snapshot.MarkDirty)
 		s.snapshot.start()
 		go s.refreshClusterMetaLoop()
 	}
