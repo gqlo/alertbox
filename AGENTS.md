@@ -250,7 +250,9 @@ git config core.hooksPath hooks
 
 Update `hooks/pre-commit` when the CI check scope changes.
 
-### Pre-push (advisory AI review)
+---
+
+## Pre-push (advisory AI review)
 
 `hooks/pre-push` runs `/code-review` and `/security-review` via the headless
 `claude` CLI when a push touches code (`*.go`, `go.mod`, `go.sum`, `hooks/*`,

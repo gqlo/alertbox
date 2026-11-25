@@ -107,12 +107,12 @@ for cmd in "/code-review" "/security-review"; do
             echo "pre-push: WARNING -- 'timeout' not found; skipping ${cmd} to avoid an unbounded review (set CLAUDE_REVIEW_TIMEOUT=0 to run without a cap)"
             continue
         fi
-        # shellcheck disable=SC2086 -- CLAUDE_REVIEW_FLAGS is an intentional flag list
+        # shellcheck disable=SC2086  # CLAUDE_REVIEW_FLAGS is an intentional flag list
         timeout "$CLAUDE_REVIEW_TIMEOUT" claude -p "$cmd" $CLAUDE_REVIEW_FLAGS \
             || echo "pre-push: WARNING -- ${cmd} timed out or did not complete cleanly (push not blocked)"
     else
         # CLAUDE_REVIEW_TIMEOUT=0: run without a cap (explicit opt-out).
-        # shellcheck disable=SC2086 -- CLAUDE_REVIEW_FLAGS is an intentional flag list
+        # shellcheck disable=SC2086  # CLAUDE_REVIEW_FLAGS is an intentional flag list
         claude -p "$cmd" $CLAUDE_REVIEW_FLAGS \
             || echo "pre-push: WARNING -- ${cmd} did not complete cleanly (push not blocked)"
     fi
