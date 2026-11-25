@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-// Run starts the KContext HTTP server and optional Alertmanager poller.
+// Run starts the Alertbox HTTP server and optional Alertmanager poller.
 func Run() {
 	store, err := NewAlertStore()
 	if err != nil {
@@ -35,7 +35,7 @@ func Run() {
 	http.HandleFunc("/alert", srv.HandleAlertDetail)
 	http.HandleFunc("/webhook", srv.HandleWebhook)
 
-	log.Printf("KContext listening on %s", addr)
+	log.Printf("Alertbox listening on %s", addr)
 	log.Printf("Dashboard: %s", dashboardURL(addr))
 	if srv.SlackEnabled() {
 		log.Print("Slack notifications enabled")

@@ -1,0 +1,21 @@
+# Install: utils/install-alertbox.sh
+
+[Unit]
+Description=Alertbox alert triage dashboard
+Documentation=https://github.com/gqlo/alertbox/blob/main/README.md
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/alertbox/alertbox.env
+ExecStart=/usr/local/bin/alertbox
+Restart=on-failure
+RestartSec=5
+# Raise if you store many alerts in Redis snapshot cache.
+# LimitNOFILE=65536
+
+# User/Group/KUBECONFIG: install-alertbox.sh writes systemd drop-in install.conf when oc login exists
+
+[Install]
+WantedBy=multi-user.target

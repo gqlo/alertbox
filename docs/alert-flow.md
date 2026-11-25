@@ -12,10 +12,10 @@
                                                  Dashboard GET /
 ```
 
-KContext supports two complementary ingest paths:
+Alertbox supports two complementary ingest paths:
 
 1. **Poll (pull)** — background goroutine queries Alertmanager directly (`GET /api/v2/alerts`). See [alert-polling.md](alert-polling.md).
-2. **Webhook (push)** — Alertmanager POSTs to KContext when alerts fire or resolve. See [webhook-ingest.md](webhook-ingest.md).
+2. **Webhook (push)** — Alertmanager POSTs to Alertbox when alerts fire or resolve. See [webhook-ingest.md](webhook-ingest.md).
 
 Both paths write to the same Redis store and appear on the same dashboard. Poll and webhook alerts are tagged with `source: poll` or `source: webhook` respectively.
 

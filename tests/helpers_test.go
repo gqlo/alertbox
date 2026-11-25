@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -25,21 +25,21 @@ func unsetEnv(t *testing.T, key string) {
 	})
 }
 
-func testStore(t *testing.T) *kcontext.AlertStore {
+func testStore(t *testing.T) *alertbox.AlertStore {
 	t.Helper()
 	mr := miniredis.RunT(t)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	t.Cleanup(func() { _ = rdb.Close() })
-	return kcontext.NewAlertStoreWithRedis(rdb)
+	return alertbox.NewAlertStoreWithRedis(rdb)
 }
 
-func testServer(t *testing.T) *kcontext.Server {
+func testServer(t *testing.T) *alertbox.Server {
 	t.Helper()
-	return kcontext.NewServer(testStore(t), "", "")
+	return alertbox.NewServer(testStore(t), "", "")
 }
 
-func sampleAlert(id, severity, status, source, ns, alertname string, received time.Time) kcontext.StoredAlert {
-	return kcontext.StoredAlert{
+func sampleAlert(id, severity, status, source, ns, alertname string, received time.Time) alertbox.StoredAlert {
+	return alertbox.StoredAlert{
 		ID:         id,
 		ReceivedAt: received,
 		Source:     source,

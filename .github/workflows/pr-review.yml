@@ -1,5 +1,5 @@
 ---
-# PR description auto-fill and Claude Code review for KContext (Go HTTP service).
+# PR description auto-fill and Claude Code review for Alertbox (Go HTTP service).
 # Requires:
 #   - GCP_SA_KEY — full Google service account JSON (service_account_key_data)
 #   - Claude GitHub App (https://github.com/apps/claude) or /install-github-app
@@ -183,7 +183,7 @@ jobs:
                 }
 
                 const prompt = [
-                  'Auto-fill a PR description for KContext (Go HTTP service: Alertmanager poll/webhook',
+                  'Auto-fill a PR description for Alertbox (Go HTTP service: Alertmanager poll/webhook',
                   'ingest, Redis store, HTML dashboard, optional Slack and oc cluster context).',
                   'Analyze the title, commits, and diff below.',
                   '',
@@ -205,7 +205,7 @@ jobs:
                   '2-4 sentences on what changed and why (handlers, store, poller, dashboard, deploy, etc.).',
                   '',
                   '## Changes Overview',
-                  'Brief bullets by area: package root (*.go), cmd/kcontext, tests/, docs/, deploy/, utils/.',
+                  'Brief bullets by area: package root (*.go), cmd/alertbox, tests/, docs/, deploy/, utils/.',
                   '',
                   '## How Has This Been Tested?',
                   'Mark applicable with [x]: go test ./..., go test -race ./..., Manual dashboard/webhook,',
@@ -214,7 +214,7 @@ jobs:
                   '',
                   '## Checklist',
                   'Mark applicable with [x]: self-review, corresponding tests in tests/ for new/changed behavior,',
-                  'go test and go vet clean, Redis keys use kcontext: prefix, docs/configuration.md or README',
+                  'go test and go vet clean, Redis keys use alertbox: prefix, docs/configuration.md or README',
                   'updated if env vars or user-facing behavior changed, no secrets committed',
                   '(Use format: - [x] Item)'
                 ].join('\n');
@@ -337,23 +337,23 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Review this KContext pull request. KContext is a Go HTTP service that ingests
+            Review this Alertbox pull request. Alertbox is a Go HTTP service that ingests
             OpenShift/Kubernetes Alertmanager alerts (poll + webhook), stores them in Redis,
             and serves a filterable HTML dashboard (optional Slack and oc cluster context).
 
             Focus on:
             - Go correctness: error handling, context timeouts for Redis/HTTP, nil/race hazards,
               method checks and Content-Type on handlers
-            - Package layout: library code is package kcontext at repo root; entry is
-              cmd/kcontext/main.go; one primary concern per file
-            - Redis store (store.go): keys must use kcontext: prefix; list newest-first (LPUSH);
+            - Package layout: library code is package alertbox at repo root; entry is
+              cmd/alertbox/main.go; one primary concern per file
+            - Redis store (store.go): keys must use alertbox: prefix; list newest-first (LPUSH);
               poll dedup via active-fingerprints / fp-state / fp-meta; resolved detection
             - Alertmanager poll vs webhook ingest paths; fingerprint dedup; JSON tags matching
               Alertmanager field names; StoredAlert.received_at for dashboard date filters
             - HTTP handlers / filters / dashboard HTML: pagination, filters, webhook validation
             - Deploy manifests (deploy/openshift/) and utils/ install scripts when touched
             - Test coverage (mandatory): new/changed behavior needs corresponding tests in
-              tests/ (package kcontext_test, miniredis/httptest). Flag untested new/changed
+              tests/ (package alertbox_test, miniredis/httptest). Flag untested new/changed
               exported behavior as a real issue. Prefer fixing code over weakening tests.
             - Docs: README.md and docs/ (configuration.md, endpoints.md, etc.) when env vars
               or user-facing behavior change; diagrams must be plain-text ASCII (no Mermaid)

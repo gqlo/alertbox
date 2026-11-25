@@ -27,17 +27,17 @@ All configuration is via environment variables.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `KCONTEXT_NAMESPACE` | no | `kcontext` | Namespace for auto token ServiceAccount |
-| `KCONTEXT_SA` | no | `kcontext` | ServiceAccount name for auto token |
-| `KCONTEXT_TOKEN_DURATION` | no | `8760h` | Token lifetime passed to `oc create token` |
-| `KCONTEXT_DEPLOY_DIR` | no | `deploy/openshift` | Path to OpenShift RBAC manifests for `oc apply` |
+| `ALERTBOX_NAMESPACE` | no | `alertbox` | Namespace for auto token ServiceAccount |
+| `ALERTBOX_SA` | no | `alertbox` | ServiceAccount name for auto token |
+| `ALERTBOX_TOKEN_DURATION` | no | `8760h` | Token lifetime passed to `oc create token` |
+| `ALERTBOX_DEPLOY_DIR` | no | `deploy/openshift` | Path to OpenShift RBAC manifests for `oc apply` |
 
 ## Example: local dev
 
 ```bash
 export REDIS_ADDR=localhost:6379
 export LISTEN_ADDR=:8083
-go run ./cmd/kcontext
+go run ./cmd/alertbox
 ```
 
 ## Example: in-cluster
@@ -52,10 +52,10 @@ export ALERTMANAGER_PORT_FORWARD=false
 
 ## Example: systemd (Linux)
 
-Use `utils/install-kcontext.sh` to build and install the service, or configure manually:
+Use `utils/install-alertbox.sh` to build and install the service, or configure manually:
 
 ```bash
-# Env file: /etc/kcontext/kcontext.env (see utils/kcontext.env.example)
+# Env file: /etc/alertbox/alertbox.env (see utils/alertbox.env.example)
 export REDIS_ADDR=localhost:6379
 export LISTEN_ADDR=:8083
 ```
@@ -64,4 +64,4 @@ See [utils/README.md](../utils/README.md) for install, updates, and `oc` port-fo
 
 ## Example: webhook test helper
 
-`docs/test-webhook.sh` accepts `KCONTEXT_URL` (default `http://localhost:8083`).
+`docs/test-webhook.sh` accepts `ALERTBOX_URL` (default `http://localhost:8083`).

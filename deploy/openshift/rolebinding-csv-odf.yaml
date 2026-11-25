@@ -1,13 +1,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: kcontext-csv-read
+  name: alertbox-csv-read
   namespace: openshift-storage
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kcontext-csv-read
+  name: alertbox-csv-read
 subjects:
   - kind: ServiceAccount
-    name: kcontext
-    namespace: kcontext
+    name: alertbox
+    namespace: alertbox

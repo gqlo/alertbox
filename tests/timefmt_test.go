@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestFormatRelativeTime(t *testing.T) {
@@ -31,7 +31,7 @@ func TestFormatRelativeTime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := kcontext.FormatRelativeTime(tt.at)
+			got := alertbox.FormatRelativeTime(tt.at)
 			if tt.want == "—" {
 				if got != "—" {
 					t.Fatalf("got %q", got)
@@ -52,21 +52,21 @@ func TestFormatRelativeTime(t *testing.T) {
 }
 
 func TestFormatAlertTime(t *testing.T) {
-	if got := kcontext.FormatAlertTime(time.Time{}); got != "—" {
+	if got := alertbox.FormatAlertTime(time.Time{}); got != "—" {
 		t.Fatalf("zero time = %q", got)
 	}
 	ts := time.Date(2026, 6, 29, 15, 4, 5, 0, time.UTC)
-	if got := kcontext.FormatAlertTime(ts); got != "2026-06-29 15:04:05 UTC" {
+	if got := alertbox.FormatAlertTime(ts); got != "2026-06-29 15:04:05 UTC" {
 		t.Fatalf("got %q", got)
 	}
 }
 
 func TestFormatTimeISO(t *testing.T) {
-	if got := kcontext.FormatTimeISO(time.Time{}); got != "" {
+	if got := alertbox.FormatTimeISO(time.Time{}); got != "" {
 		t.Fatalf("zero time = %q", got)
 	}
 	ts := time.Date(2026, 6, 29, 15, 4, 5, 0, time.UTC)
-	if got := kcontext.FormatTimeISO(ts); got != "2026-06-29T15:04:05Z" {
+	if got := alertbox.FormatTimeISO(ts); got != "2026-06-29T15:04:05Z" {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -82,7 +82,7 @@ func TestParseFlexibleTime(t *testing.T) {
 		{`""`, time.Time{}},
 	}
 	for _, tt := range tests {
-		got := kcontext.ParseFlexibleTime(json.RawMessage(tt.raw))
+		got := alertbox.ParseFlexibleTime(json.RawMessage(tt.raw))
 		if !got.Equal(tt.want) {
 			t.Fatalf("ParseFlexibleTime(%s) = %v, want %v", tt.raw, got, tt.want)
 		}

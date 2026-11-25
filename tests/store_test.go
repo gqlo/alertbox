@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,7 +14,7 @@ func TestSaveAndList(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 
-	err := s.Save(ctx, kcontext.Alert{
+	err := s.Save(ctx, alertbox.Alert{
 		Status: "firing",
 		Labels: map[string]string{"alertname": "HighCPU", "severity": "warning"},
 	})
@@ -42,7 +42,7 @@ func TestList_respectsLimit(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		if err := s.Save(ctx, kcontext.Alert{Status: "firing", Labels: map[string]string{"alertname": "A"}}); err != nil {
+		if err := s.Save(ctx, alertbox.Alert{Status: "firing", Labels: map[string]string{"alertname": "A"}}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -60,7 +60,7 @@ func TestGet(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 
-	if err := s.Save(ctx, kcontext.Alert{Status: "firing", Labels: map[string]string{"alertname": "X"}}); err != nil {
+	if err := s.Save(ctx, alertbox.Alert{Status: "firing", Labels: map[string]string{"alertname": "X"}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,9 +91,9 @@ func TestSyncPolled_newAndDedup(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "abc123"
-	polled := []kcontext.PolledAlert{{
+	polled := []alertbox.PolledAlert{{
 		Fingerprint: fp,
-		Alert: kcontext.Alert{
+		Alert: alertbox.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "DiskFull", "severity": "critical"},
@@ -127,9 +127,9 @@ func TestSyncPolled_resolvedWhenMissing(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "deadbeef"
-	polled := []kcontext.PolledAlert{{
+	polled := []alertbox.PolledAlert{{
 		Fingerprint: fp,
-		Alert: kcontext.Alert{
+		Alert: alertbox.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill", "severity": "warning"},
@@ -162,17 +162,17 @@ func TestSyncPolled_noDuplicateResolvedWhenAlreadyResolved(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "deadbeef"
-	firing := []kcontext.PolledAlert{{
+	firing := []alertbox.PolledAlert{{
 		Fingerprint: fp,
-		Alert: kcontext.Alert{
+		Alert: alertbox.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill"},
 		},
 	}}
-	resolved := []kcontext.PolledAlert{{
+	resolved := []alertbox.PolledAlert{{
 		Fingerprint: fp,
-		Alert: kcontext.Alert{
+		Alert: alertbox.Alert{
 			Status:      "resolved",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill"},
@@ -202,7 +202,7 @@ func TestSyncPolled_noDuplicateResolvedWhenAlreadyResolved(t *testing.T) {
 
 func TestNewStoredFromAlert(t *testing.T) {
 	start := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	stored := kcontext.NewStoredFromAlert(kcontext.Alert{
+	stored := alertbox.NewStoredFromAlert(alertbox.Alert{
 		Status:      "firing",
 		Fingerprint: "fp1",
 		Labels:      map[string]string{"alertname": "Test"},
@@ -224,11 +224,11 @@ func TestList_legacyReceivedAtFormat(t *testing.T) {
 
 	ctx := context.Background()
 	legacy := `{"id":"legacy-1","received_at":"2026-06-29T10:00:00","source":"webhook","status":"firing","labels":{},"annotations":{}}`
-	if err := rdb.LPush(ctx, "kcontext:alerts", legacy).Err(); err != nil {
+	if err := rdb.LPush(ctx, "alertbox:alerts", legacy).Err(); err != nil {
 		t.Fatal(err)
 	}
 
-	s := kcontext.NewAlertStoreWithRedis(rdb)
+	s := alertbox.NewAlertStoreWithRedis(rdb)
 	alerts, err := s.List(ctx, 10)
 	if err != nil {
 		t.Fatal(err)

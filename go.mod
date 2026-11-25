@@ -1,4 +1,4 @@
-module github.com/gqlo/kcontext
+module github.com/gqlo/alertbox
 
 go 1.24
 

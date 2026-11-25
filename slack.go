@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"bytes"

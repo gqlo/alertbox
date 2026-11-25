@@ -1,38 +1,38 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestAlertmanagerURL_default(t *testing.T) {
 	unsetEnv(t, "ALERTMANAGER_URL")
-	if got := kcontext.AlertmanagerURL(); got != kcontext.DefaultAlertmanagerURL {
-		t.Fatalf("AlertmanagerURL() = %q, want %q", got, kcontext.DefaultAlertmanagerURL)
+	if got := alertbox.AlertmanagerURL(); got != alertbox.DefaultAlertmanagerURL {
+		t.Fatalf("AlertmanagerURL() = %q, want %q", got, alertbox.DefaultAlertmanagerURL)
 	}
 }
 
 func TestAlertmanagerPollingEnabled(t *testing.T) {
 	t.Run("enabled when unset", func(t *testing.T) {
 		unsetEnv(t, "ALERTMANAGER_URL")
-		if !kcontext.AlertmanagerPollingEnabled() {
+		if !alertbox.AlertmanagerPollingEnabled() {
 			t.Fatal("AlertmanagerPollingEnabled() = false, want true when ALERTMANAGER_URL unset")
 		}
 	})
 
 	t.Run("disabled when empty", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "")
-		if kcontext.AlertmanagerPollingEnabled() {
+		if alertbox.AlertmanagerPollingEnabled() {
 			t.Fatal("AlertmanagerPollingEnabled() = true, want false when ALERTMANAGER_URL=\"\"")
 		}
 	})
 
 	t.Run("enabled when set", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "https://alertmanager.example:9094")
-		if !kcontext.AlertmanagerPollingEnabled() {
+		if !alertbox.AlertmanagerPollingEnabled() {
 			t.Fatal("AlertmanagerPollingEnabled() = false, want true when ALERTMANAGER_URL is set")
 		}
 	})
@@ -40,14 +40,14 @@ func TestAlertmanagerPollingEnabled(t *testing.T) {
 
 func TestAlertmanagerTLSInsecure_default(t *testing.T) {
 	unsetEnv(t, "ALERTMANAGER_TLS_INSECURE")
-	if !kcontext.AlertmanagerTLSInsecure() {
+	if !alertbox.AlertmanagerTLSInsecure() {
 		t.Fatal("AlertmanagerTLSInsecure() = false, want true by default")
 	}
 }
 
 func TestAlertmanagerTLSInsecure_explicit(t *testing.T) {
 	t.Setenv("ALERTMANAGER_TLS_INSECURE", "false")
-	if kcontext.AlertmanagerTLSInsecure() {
+	if alertbox.AlertmanagerTLSInsecure() {
 		t.Fatal("AlertmanagerTLSInsecure() = true, want false when set to false")
 	}
 }
@@ -62,7 +62,7 @@ func TestAlertmanagerToken_fromFile(t *testing.T) {
 	unsetEnv(t, "ALERTMANAGER_TOKEN_FILE")
 	t.Setenv("ALERTMANAGER_TOKEN_FILE", path)
 
-	token, source, err := kcontext.ResolveAlertmanagerToken()
+	token, source, err := alertbox.ResolveAlertmanagerToken()
 	if err != nil {
 		t.Fatalf("ResolveAlertmanagerToken() error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestAlertmanagerToken_fromFile(t *testing.T) {
 }
 
 func TestOpenShiftDeployDir_findsRelativePath(t *testing.T) {
-	got := kcontext.OpenShiftDeployDir()
+	got := alertbox.OpenShiftDeployDir()
 	if got == "" {
 		t.Fatal("OpenShiftDeployDir() returned empty")
 	}
@@ -85,7 +85,7 @@ func TestOpenShiftDeployDir_findsRelativePath(t *testing.T) {
 }
 
 func TestAlertmanagerAlertsURL(t *testing.T) {
-	got, err := kcontext.AlertmanagerAlertsURL("https://localhost:9094")
+	got, err := alertbox.AlertmanagerAlertsURL("https://localhost:9094")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestIsLocalhostAlertmanagerURL(t *testing.T) {
 		{"not-a-url", false},
 	}
 	for _, tt := range tests {
-		if got := kcontext.IsLocalhostAlertmanagerURL(tt.url); got != tt.want {
+		if got := alertbox.IsLocalhostAlertmanagerURL(tt.url); got != tt.want {
 			t.Errorf("IsLocalhostAlertmanagerURL(%q) = %v, want %v", tt.url, got, tt.want)
 		}
 	}
@@ -116,7 +116,7 @@ func TestShouldStartAlertmanagerPortForward(t *testing.T) {
 	t.Run("auto when URL unset", func(t *testing.T) {
 		unsetEnv(t, "ALERTMANAGER_URL")
 		unsetEnv(t, "ALERTMANAGER_PORT_FORWARD")
-		if !kcontext.ShouldStartAlertmanagerPortForward() {
+		if !alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("want auto port-forward when ALERTMANAGER_URL unset")
 		}
 	})
@@ -124,7 +124,7 @@ func TestShouldStartAlertmanagerPortForward(t *testing.T) {
 	t.Run("auto when localhost URL set", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "https://localhost:9094")
 		unsetEnv(t, "ALERTMANAGER_PORT_FORWARD")
-		if !kcontext.ShouldStartAlertmanagerPortForward() {
+		if !alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("want auto port-forward for localhost URL")
 		}
 	})
@@ -132,7 +132,7 @@ func TestShouldStartAlertmanagerPortForward(t *testing.T) {
 	t.Run("skip for in-cluster URL", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "https://alertmanager-main.openshift-monitoring.svc:9094")
 		unsetEnv(t, "ALERTMANAGER_PORT_FORWARD")
-		if kcontext.ShouldStartAlertmanagerPortForward() {
+		if alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("should not auto port-forward for cluster URL")
 		}
 	})
@@ -140,7 +140,7 @@ func TestShouldStartAlertmanagerPortForward(t *testing.T) {
 	t.Run("disabled explicitly", func(t *testing.T) {
 		unsetEnv(t, "ALERTMANAGER_URL")
 		t.Setenv("ALERTMANAGER_PORT_FORWARD", "false")
-		if kcontext.ShouldStartAlertmanagerPortForward() {
+		if alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("ALERTMANAGER_PORT_FORWARD=false should disable")
 		}
 	})
@@ -148,14 +148,14 @@ func TestShouldStartAlertmanagerPortForward(t *testing.T) {
 	t.Run("forced on for localhost", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "https://localhost:9094")
 		t.Setenv("ALERTMANAGER_PORT_FORWARD", "true")
-		if !kcontext.ShouldStartAlertmanagerPortForward() {
+		if !alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("ALERTMANAGER_PORT_FORWARD=true should enable for localhost")
 		}
 	})
 
 	t.Run("polling disabled", func(t *testing.T) {
 		t.Setenv("ALERTMANAGER_URL", "")
-		if kcontext.ShouldStartAlertmanagerPortForward() {
+		if alertbox.ShouldStartAlertmanagerPortForward() {
 			t.Fatal("empty ALERTMANAGER_URL disables polling and port-forward")
 		}
 	})
@@ -167,14 +167,14 @@ func TestAlertmanagerPortForwardConfig_defaults(t *testing.T) {
 	unsetEnv(t, "ALERTMANAGER_PF_LOCAL_PORT")
 	unsetEnv(t, "ALERTMANAGER_PF_REMOTE_PORT")
 
-	cfg, err := kcontext.AlertmanagerPortForwardConfig()
+	cfg, err := alertbox.AlertmanagerPortForwardConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Namespace != kcontext.DefaultAlertmanagerPFNamespace || cfg.Service != kcontext.DefaultAlertmanagerPFService {
+	if cfg.Namespace != alertbox.DefaultAlertmanagerPFNamespace || cfg.Service != alertbox.DefaultAlertmanagerPFService {
 		t.Fatalf("cfg = %+v", cfg)
 	}
-	if cfg.LocalPort != kcontext.DefaultAlertmanagerPFLocalPort || cfg.RemotePort != kcontext.DefaultAlertmanagerPFRemotePort {
+	if cfg.LocalPort != alertbox.DefaultAlertmanagerPFLocalPort || cfg.RemotePort != alertbox.DefaultAlertmanagerPFRemotePort {
 		t.Fatalf("ports = %d/%d", cfg.LocalPort, cfg.RemotePort)
 	}
 }

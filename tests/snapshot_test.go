@@ -1,21 +1,21 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestAlertSnapshotCache_refreshAndFilter(t *testing.T) {
 	store := testStore(t)
-	cache := kcontext.NewAlertSnapshotCacheForTest(store)
+	cache := alertbox.NewAlertSnapshotCacheForTest(store)
 	defer cache.Stop()
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
-		if err := store.Save(ctx, kcontext.Alert{
+		if err := store.Save(ctx, alertbox.Alert{
 			Status: "firing",
 			Labels: map[string]string{
 				"alertname": "SnapTest",
@@ -27,7 +27,7 @@ func TestAlertSnapshotCache_refreshAndFilter(t *testing.T) {
 		}
 	}
 	for i := 0; i < 2; i++ {
-		if err := store.Save(ctx, kcontext.Alert{
+		if err := store.Save(ctx, alertbox.Alert{
 			Status: "firing",
 			Labels: map[string]string{
 				"alertname": "SnapTest",
@@ -44,7 +44,7 @@ func TestAlertSnapshotCache_refreshAndFilter(t *testing.T) {
 		t.Fatalf("Total() = %d, want 5", got)
 	}
 
-	view := cache.FilteredView(kcontext.AlertFilters{Severity: "critical"})
+	view := cache.FilteredView(alertbox.AlertFilters{Severity: "critical"})
 	if len(view.Alerts) != 3 {
 		t.Fatalf("filtered critical alerts = %d, want 3", len(view.Alerts))
 	}
@@ -52,7 +52,7 @@ func TestAlertSnapshotCache_refreshAndFilter(t *testing.T) {
 		t.Fatalf("NamespaceRanks = %+v, want kube-system only", view.NamespaceRanks)
 	}
 
-	view2 := cache.FilteredView(kcontext.AlertFilters{Severity: "critical"})
+	view2 := cache.FilteredView(alertbox.AlertFilters{Severity: "critical"})
 	if len(view2.Alerts) != 3 {
 		t.Fatal("expected filter stats cache hit on second call")
 	}
@@ -60,7 +60,7 @@ func TestAlertSnapshotCache_refreshAndFilter(t *testing.T) {
 
 func TestAlertSnapshotCache_markDirtyRefreshes(t *testing.T) {
 	store := testStore(t)
-	cache := kcontext.NewAlertSnapshotCacheForTest(store)
+	cache := alertbox.NewAlertSnapshotCacheForTest(store)
 	cache.StartForTest()
 	defer cache.Stop()
 
@@ -69,7 +69,7 @@ func TestAlertSnapshotCache_markDirtyRefreshes(t *testing.T) {
 		t.Fatalf("initial Total() = %d, want 0", cache.Total())
 	}
 
-	if err := store.Save(context.Background(), kcontext.Alert{
+	if err := store.Save(context.Background(), alertbox.Alert{
 		Status:  "firing",
 		Labels:  map[string]string{"alertname": "A", "severity": "info", "namespace": "demo"},
 	}); err != nil {
@@ -87,8 +87,8 @@ func TestAlertSnapshotCache_markDirtyRefreshes(t *testing.T) {
 }
 
 func TestAlertFilters_statsKeyIgnoresPage(t *testing.T) {
-	base := kcontext.AlertFilters{Severity: "critical", Page: 1}
-	withPage := kcontext.AlertFilters{Severity: "critical", Page: 4}
+	base := alertbox.AlertFilters{Severity: "critical", Page: 1}
+	withPage := alertbox.AlertFilters{Severity: "critical", Page: 4}
 	if base.StatsKey() != withPage.StatsKey() {
 		t.Fatalf("StatsKey() = %q vs %q, want equal", base.StatsKey(), withPage.StatsKey())
 	}

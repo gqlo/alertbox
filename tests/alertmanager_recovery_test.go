@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestFetchAlerts_unauthorized(t *testing.T) {
@@ -19,11 +19,11 @@ func TestFetchAlerts_unauthorized(t *testing.T) {
 
 	client := &http.Client{
 		Timeout:   5 * time.Second,
-		Transport: kcontext.NewAlertmanagerHTTPTransport(true),
+		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
 	}
 
-	_, err := kcontext.FetchAlertmanagerAlerts(context.Background(), srv.URL, "old-token", client)
-	if !kcontext.IsAlertmanagerUnauthorized(err) {
+	_, err := alertbox.FetchAlertmanagerAlerts(context.Background(), srv.URL, "old-token", client)
+	if !alertbox.IsAlertmanagerUnauthorized(err) {
 		t.Fatalf("FetchAlertmanagerAlerts() error = %v, want unauthorized", err)
 	}
 }
@@ -39,10 +39,10 @@ func TestFetchAlerts_success(t *testing.T) {
 
 	client := &http.Client{
 		Timeout:   5 * time.Second,
-		Transport: kcontext.NewAlertmanagerHTTPTransport(true),
+		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
 	}
 
-	alerts, err := kcontext.FetchAlertmanagerAlerts(context.Background(), srv.URL, "", client)
+	alerts, err := alertbox.FetchAlertmanagerAlerts(context.Background(), srv.URL, "", client)
 	if err != nil {
 		t.Fatalf("FetchAlertmanagerAlerts() error: %v", err)
 	}
@@ -54,10 +54,10 @@ func TestFetchAlerts_success(t *testing.T) {
 func TestAlertmanagerClient_refreshTransport(t *testing.T) {
 	client := &http.Client{
 		Timeout:   15 * time.Second,
-		Transport: kcontext.NewAlertmanagerHTTPTransport(true),
+		Transport: alertbox.NewAlertmanagerHTTPTransport(true),
 	}
 	oldTransport := client.Transport
-	kcontext.RefreshAlertmanagerHTTPClient(client)
+	alertbox.RefreshAlertmanagerHTTPClient(client)
 	if client.Transport == oldTransport {
 		t.Fatal("RefreshAlertmanagerHTTPClient() did not replace transport")
 	}
@@ -66,12 +66,12 @@ func TestAlertmanagerClient_refreshTransport(t *testing.T) {
 func TestShouldRecoverPortForward(t *testing.T) {
 	t.Setenv("ALERTMANAGER_URL", "https://localhost:9094")
 	t.Setenv("ALERTMANAGER_PORT_FORWARD", "true")
-	if !kcontext.ShouldRecoverPortForward("https://localhost:9094") {
+	if !alertbox.ShouldRecoverPortForward("https://localhost:9094") {
 		t.Fatal("want recovery for owned localhost port-forward")
 	}
 
 	t.Setenv("ALERTMANAGER_URL", "https://alertmanager-main.openshift-monitoring.svc:9094")
-	if kcontext.ShouldRecoverPortForward("https://alertmanager-main.openshift-monitoring.svc:9094") {
+	if alertbox.ShouldRecoverPortForward("https://alertmanager-main.openshift-monitoring.svc:9094") {
 		t.Fatal("should not recover port-forward for in-cluster URL")
 	}
 }

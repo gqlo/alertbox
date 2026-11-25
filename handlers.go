@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ var alertsTemplate = template.Must(template.New("alerts").Funcs(template.FuncMap
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>KContext — Alerts</title>
+  <title>Alertbox — Alerts</title>
   <style>
     :root {
       color-scheme: light;
@@ -338,7 +338,7 @@ var alertsTemplate = template.Must(template.New("alerts").Funcs(template.FuncMap
 <body>
   <header>
     <div class="header-top">
-      <h1><a href="/" title="Clear all filters">KContext</a></h1>
+      <h1><a href="/" title="Clear all filters">Alertbox</a></h1>
       {{utcClock}}
     </div>
     {{headerIntro}}

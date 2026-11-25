@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func assertHeaderIntro(t *testing.T, body string) {
@@ -23,8 +23,8 @@ func assertHeaderIntro(t *testing.T, body string) {
 		"What it does:",
 		"stores them in Redis",
 		"future debugging",
-		`href="https://github.com/gqlo/KContext"`,
-		"github.com/gqlo/KContext",
+		`href="https://github.com/gqlo/alertbox"`,
+		"github.com/gqlo/alertbox",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("header intro missing %q", want)
@@ -53,7 +53,7 @@ func TestHandleAlertsPage_includesHeaderIntro(t *testing.T) {
 func TestHandleAlertDetail_includesHeaderIntro(t *testing.T) {
 	s := testServer(t)
 	ctx := context.Background()
-	if err := s.Store().Save(ctx, kcontext.Alert{
+	if err := s.Store().Save(ctx, alertbox.Alert{
 		Status: "firing",
 		Labels: map[string]string{
 			"alertname": "TestAlert",

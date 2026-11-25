@@ -1,8 +1,8 @@
 # Alert polling
 
-Polling is **enabled by default** against `https://localhost:9094`. KContext starts `oc port-forward` automatically when the URL is localhost (or unset). Set `ALERTMANAGER_PORT_FORWARD=false` to manage port-forward yourself, or `ALERTMANAGER_URL=""` to disable polling entirely.
+Polling is **enabled by default** against `https://localhost:9094`. Alertbox starts `oc port-forward` automatically when the URL is localhost (or unset). Set `ALERTMANAGER_PORT_FORWARD=false` to manage port-forward yourself, or `ALERTMANAGER_URL=""` to disable polling entirely.
 
-Every `ALERTMANAGER_POLL_INTERVAL` (default **10s**), KContext calls:
+Every `ALERTMANAGER_POLL_INTERVAL` (default **10s**), Alertbox calls:
 
 ```http
 GET {ALERTMANAGER_URL}/api/v2/alerts?active=true&silenced=true&inhibited=true&unprocessed=true
@@ -15,7 +15,7 @@ This uses Alertmanager's default inclusive filters so **all alerts currently hel
 
 Alertmanager returns a JSON array. See [alertmanager-api-response.json](alertmanager-api-response.json).
 
-| Field | Used by KContext |
+| Field | Used by Alertbox |
 |-------|------------------|
 | `fingerprint` | Deduplication — one stored row per alert instance |
 | `labels` | Alert name, severity, namespace, pod, etc. |
@@ -25,7 +25,7 @@ Alertmanager returns a JSON array. See [alertmanager-api-response.json](alertman
 | `updatedAt` | Dashboard **Updated at** column (falls back to `received_at` when missing) |
 | `receivers`, `generatorURL` | Ignored |
 
-When an alert disappears from the API response on the next poll, KContext records a `resolved` entry using cached labels and annotations.
+When an alert disappears from the API response on the next poll, Alertbox records a `resolved` entry using cached labels and annotations.
 
 ## Processing
 
@@ -42,37 +42,37 @@ Fingerprint state is tracked in Redis:
 
 | Key | Purpose |
 |-----|---------|
-| `kcontext:alerts` | List of JSON `StoredAlert` records (newest first) |
-| `kcontext:active-fingerprints` | Set of currently firing fingerprints |
-| `kcontext:fp-state` | Last known status per fingerprint |
-| `kcontext:fp-meta` | Cached labels/annotations for resolved detection |
+| `alertbox:alerts` | List of JSON `StoredAlert` records (newest first) |
+| `alertbox:active-fingerprints` | Set of currently firing fingerprints |
+| `alertbox:fp-state` | Last known status per fingerprint |
+| `alertbox:fp-meta` | Cached labels/annotations for resolved detection |
 
 ## OpenShift setup
 
 ### Local dev
 
-Run from repo root (so `deploy/openshift/` is found), or set `KCONTEXT_DEPLOY_DIR`:
+Run from repo root (so `deploy/openshift/` is found), or set `ALERTBOX_DEPLOY_DIR`:
 
 ```bash
 export REDIS_ADDR=localhost:6379
-go run ./cmd/kcontext
+go run ./cmd/alertbox
 ```
 
 On startup you should see:
 
 ```text
 Applying OpenShift RBAC from .../deploy/openshift...
-Creating token for serviceaccount/kcontext in kcontext (duration=8760h)...
+Creating token for serviceaccount/alertbox in alertbox (duration=8760h)...
 Alertmanager auth: oc create token
 ```
 
-On each start (when polling is enabled and `ALERTMANAGER_TOKEN_FILE` is unset), KContext automatically:
+On each start (when polling is enabled and `ALERTMANAGER_TOKEN_FILE` is unset), Alertbox automatically:
 
 1. Runs `oc apply -f deploy/openshift/` (idempotent RBAC setup)
-2. Runs `oc create token kcontext -n kcontext --duration=8760h`
+2. Runs `oc create token alertbox -n alertbox --duration=8760h`
 3. Uses that bearer token for Alertmanager polling
 
-Requires `oc login` with permission to apply the manifests and create tokens for the `kcontext` ServiceAccount.
+Requires `oc login` with permission to apply the manifests and create tokens for the `alertbox` ServiceAccount.
 
 **Optional manual script:** `./deploy/create-local-token.sh` runs the same steps and prints a token for curl testing (not required before `go run`).
 
@@ -93,8 +93,8 @@ The token needs permission to read Alertmanager. On OpenShift 4.15+, `cluster-mo
 
 | File | Purpose |
 |------|---------|
-| `namespace.yaml` | Namespace `kcontext` |
-| `serviceaccount.yaml` | ServiceAccount `kcontext` |
+| `namespace.yaml` | Namespace `alertbox` |
+| `serviceaccount.yaml` | ServiceAccount `alertbox` |
 | `clusterrolebinding.yaml` | Grants `cluster-monitoring-view` to the SA |
 | `rolebinding-alertmanager.yaml` | Grants `monitoring-alertmanager-view` in `openshift-monitoring` |
 | `clusterrole-cluster-meta.yaml` | Lets the SA list nodes and read cluster version |
@@ -105,7 +105,7 @@ The token needs permission to read Alertmanager. On OpenShift 4.15+, `cluster-mo
 With port-forward running on 9094:
 
 ```bash
-TOKEN=$(oc create token kcontext -n kcontext --duration=8760h)
+TOKEN=$(oc create token alertbox -n alertbox --duration=8760h)
 curl -sk -H "Authorization: Bearer $TOKEN" \
   'https://localhost:9094/api/v2/alerts?active=true&silenced=true&inhibited=true&unprocessed=true' | jq .
 ```

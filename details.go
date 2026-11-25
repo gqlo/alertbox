@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"context"
@@ -22,7 +22,7 @@ var alertDetailTemplate = template.Must(template.New("alert-detail").Funcs(templ
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{index .Alert.Labels "alertname"}} — KContext</title>
+  <title>{{index .Alert.Labels "alertname"}} — Alertbox</title>
   <style>
     :root {
       --bg: #f6f8fa;
@@ -138,7 +138,7 @@ var alertDetailTemplate = template.Must(template.New("alert-detail").Funcs(templ
 <body>
   <header>
     <div class="header-top">
-      <h1><a href="/" title="Clear all filters">KContext</a></h1>
+      <h1><a href="/" title="Clear all filters">Alertbox</a></h1>
       {{utcClock}}
     </div>
     {{headerIntro}}
@@ -156,7 +156,7 @@ var alertDetailTemplate = template.Must(template.New("alert-detail").Funcs(templ
         <tr><th>Namespace</th><td>{{.Alert.Namespace}}</td></tr>
         <tr><th>Source</th><td>{{.Alert.Source}}</td></tr>
         <tr><th>Updated at</th><td><time class="relative-time" datetime="{{fmtISO .Alert.UpdatedDisplayTime}}" title="{{fmtTime .Alert.UpdatedDisplayTime}}">{{fmtRelative .Alert.UpdatedDisplayTime}}</time></td></tr>
-        <tr><th>Received by KContext</th><td>{{fmtTime .Alert.ReceivedAt}}</td></tr>
+        <tr><th>Received by Alertbox</th><td>{{fmtTime .Alert.ReceivedAt}}</td></tr>
         <tr><th>Starts at</th><td>{{fmtTime .Alert.StartsAt}}</td></tr>
         <tr><th>Ends at</th><td>{{fmtTime .Alert.EndsAt}}</td></tr>
         <tr><th>Fingerprint</th><td class="mono">{{.Alert.Fingerprint}}</td></tr>

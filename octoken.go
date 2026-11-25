@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	DefaultKContextNamespace     = "kcontext"
-	DefaultKContextSA            = "kcontext"
-	DefaultKContextTokenDuration = "8760h"
+	DefaultAlertboxNamespace     = "alertbox"
+	DefaultAlertboxSA            = "alertbox"
+	DefaultAlertboxTokenDuration = "8760h"
 )
 
 type saTokenConfig struct {
@@ -24,15 +24,15 @@ type saTokenConfig struct {
 }
 
 func saTokenConfigFromEnv() saTokenConfig {
-	deployDir := strings.TrimSpace(os.Getenv("KCONTEXT_DEPLOY_DIR"))
+	deployDir := strings.TrimSpace(os.Getenv("ALERTBOX_DEPLOY_DIR"))
 	if deployDir == "" {
 		deployDir = openshiftDeployDir()
 	}
 
 	return saTokenConfig{
-		namespace: envOrDefault("KCONTEXT_NAMESPACE", DefaultKContextNamespace),
-		sa:        envOrDefault("KCONTEXT_SA", DefaultKContextSA),
-		duration:  envOrDefault("KCONTEXT_TOKEN_DURATION", DefaultKContextTokenDuration),
+		namespace: envOrDefault("ALERTBOX_NAMESPACE", DefaultAlertboxNamespace),
+		sa:        envOrDefault("ALERTBOX_SA", DefaultAlertboxSA),
+		duration:  envOrDefault("ALERTBOX_TOKEN_DURATION", DefaultAlertboxTokenDuration),
 		deployDir: deployDir,
 	}
 }
@@ -45,7 +45,7 @@ func envOrDefault(key, fallback string) string {
 }
 
 func openshiftDeployDir() string {
-	if dir := strings.TrimSpace(os.Getenv("KCONTEXT_DEPLOY_DIR")); dir != "" {
+	if dir := strings.TrimSpace(os.Getenv("ALERTBOX_DEPLOY_DIR")); dir != "" {
 		return dir
 	}
 
@@ -72,7 +72,7 @@ func openshiftDeployDir() string {
 
 func ensureOpenShiftRBAC(ctx context.Context, deployDir string) error {
 	if deployDir == "" {
-		return fmt.Errorf("openshift deploy dir not found (set KCONTEXT_DEPLOY_DIR)")
+		return fmt.Errorf("openshift deploy dir not found (set ALERTBOX_DEPLOY_DIR)")
 	}
 	if _, err := os.Stat(deployDir); err != nil {
 		return fmt.Errorf("openshift deploy dir %q: %w", deployDir, err)

@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Build KContext, install binary + systemd unit, and restart the service.
+# Build Alertbox, install binary + systemd unit, and restart the service.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-BIN_DEST="/usr/local/bin/kcontext"
-DEPLOY_DEST="/opt/kcontext/deploy/openshift"
-ENV_DIR="/etc/kcontext"
-ENV_FILE="${ENV_DIR}/kcontext.env"
+BIN_DEST="/usr/local/bin/alertbox"
+DEPLOY_DEST="/opt/alertbox/deploy/openshift"
+ENV_DIR="/etc/alertbox"
+ENV_FILE="${ENV_DIR}/alertbox.env"
 SYSTEM_KUBECONFIG="${ENV_DIR}/kubeconfig"
-SYSTEMD_UNIT="/etc/systemd/system/kcontext.service"
-SYSTEMD_DROPIN_DIR="/etc/systemd/system/kcontext.service.d"
+SYSTEMD_UNIT="/etc/systemd/system/alertbox.service"
+SYSTEMD_DROPIN_DIR="/etc/systemd/system/alertbox.service.d"
 SYSTEMD_DROPIN="${SYSTEMD_DROPIN_DIR}/install.conf"
-SERVICE_NAME="kcontext"
-BUILD_OUTPUT="${SCRIPT_DIR}/.kcontext.build"
+SERVICE_NAME="alertbox"
+BUILD_OUTPUT="${SCRIPT_DIR}/.alertbox.build"
 
 usage() {
 	cat <<EOF
 Usage: $(basename "$0") [options]
 
-Build KContext from this repo, install to ${BIN_DEST}, refresh the systemd unit,
+Build Alertbox from this repo, install to ${BIN_DEST}, refresh the systemd unit,
 and enable/restart the ${SERVICE_NAME} service.
 
 Options:
@@ -28,8 +28,8 @@ Options:
   --no-test        Skip go test before build
   -h, --help       Show this help
 
-First run creates ${ENV_FILE} from kcontext.env.example if missing.
-An existing env file is never overwritten (except KCONTEXT_DEPLOY_DIR and KUBECONFIG are refreshed when detected).
+First run creates ${ENV_FILE} from alertbox.env.example if missing.
+An existing env file is never overwritten (except ALERTBOX_DEPLOY_DIR and KUBECONFIG are refreshed when detected).
 
 When Alertmanager polling is enabled, install uses the installer shell's \$KUBECONFIG (if set),
 materializes a flattened copy to ${ENV_DIR}/kubeconfig for systemd, validates oc apply RBAC manifests,
@@ -38,8 +38,8 @@ EOF
 }
 
 install_user() {
-	if [[ -n "${KCONTEXT_INSTALL_USER:-}" ]]; then
-		echo "${KCONTEXT_INSTALL_USER}"
+	if [[ -n "${ALERTBOX_INSTALL_USER:-}" ]]; then
+		echo "${ALERTBOX_INSTALL_USER}"
 		return
 	fi
 	if [[ -n "${SUDO_USER:-}" ]]; then
@@ -148,7 +148,7 @@ validate_oc_kubeconfig() {
 	user="$(install_user)"
 	if [[ -z "${user}" ]]; then
 		echo "ERROR: could not determine install user for oc/kubeconfig" >&2
-		echo "    Run via sudo from your login, set KCONTEXT_INSTALL_USER, or edit ${SYSTEMD_DROPIN}" >&2
+		echo "    Run via sudo from your login, set ALERTBOX_INSTALL_USER, or edit ${SYSTEMD_DROPIN}" >&2
 		return 1
 	fi
 
@@ -168,10 +168,10 @@ validate_oc_kubeconfig() {
 	whoami=""
 
 	# 1. Explicit install override
-	if [[ -n "${KCONTEXT_INSTALL_KUBECONFIG:-}" ]]; then
-		tried="${tried} KCONTEXT_INSTALL_KUBECONFIG=${KCONTEXT_INSTALL_KUBECONFIG}"
-		if whoami="$(oc_whoami_with_kubeconfig "${KCONTEXT_INSTALL_KUBECONFIG}")"; then
-			source_kubeconfig="${KCONTEXT_INSTALL_KUBECONFIG}"
+	if [[ -n "${ALERTBOX_INSTALL_KUBECONFIG:-}" ]]; then
+		tried="${tried} ALERTBOX_INSTALL_KUBECONFIG=${ALERTBOX_INSTALL_KUBECONFIG}"
+		if whoami="$(oc_whoami_with_kubeconfig "${ALERTBOX_INSTALL_KUBECONFIG}")"; then
+			source_kubeconfig="${ALERTBOX_INSTALL_KUBECONFIG}"
 		fi
 	fi
 
@@ -217,7 +217,7 @@ validate_oc_kubeconfig() {
 		echo "ERROR: oc is not logged in for user ${user}" >&2
 		echo "    Tried:${tried}" >&2
 		echo "    Installer KUBECONFIG=${KUBECONFIG:-<unset>}" >&2
-		echo "    Run oc login, export KUBECONFIG, or set KCONTEXT_INSTALL_KUBECONFIG" >&2
+		echo "    Run oc login, export KUBECONFIG, or set ALERTBOX_INSTALL_KUBECONFIG" >&2
 		echo "    Or set ALERTMANAGER_TOKEN_FILE in ${ENV_FILE}" >&2
 		return 1
 	fi
@@ -235,14 +235,14 @@ validate_oc_kubeconfig() {
 	echo "    materialized oc whoami: ${whoami}"
 
 	if ! KUBECONFIG="${kubeconfig}" oc apply -f "${DEPLOY_DEST}" >/dev/null 2>&1; then
-		echo "ERROR: oc apply -f ${DEPLOY_DEST} failed (same step kcontext runs at startup)" >&2
+		echo "ERROR: oc apply -f ${DEPLOY_DEST} failed (same step alertbox runs at startup)" >&2
 		KUBECONFIG="${kubeconfig}" oc apply -f "${DEPLOY_DEST}" >&2 || true
 		return 1
 	fi
 	echo "    oc apply -f ${DEPLOY_DEST} ok"
 
-	KCONTEXT_VALIDATED_KUBECONFIG="${kubeconfig}"
-	KCONTEXT_VALIDATED_USER="${user}"
+	ALERTBOX_VALIDATED_KUBECONFIG="${kubeconfig}"
+	ALERTBOX_VALIDATED_USER="${user}"
 	return 0
 }
 
@@ -259,8 +259,8 @@ validate_prerequisites() {
 
 install_service_identity() {
 	local user home group kubeconfig
-	user="${KCONTEXT_VALIDATED_USER:-$(install_user)}"
-	kubeconfig="${KCONTEXT_VALIDATED_KUBECONFIG:-}"
+	user="${ALERTBOX_VALIDATED_USER:-$(install_user)}"
+	kubeconfig="${ALERTBOX_VALIDATED_KUBECONFIG:-}"
 
 	if [[ -z "${user}" || -z "${kubeconfig}" ]]; then
 		echo "ERROR: service identity not validated — internal error" >&2
@@ -280,7 +280,7 @@ install_service_identity() {
 	echo "==> Configuring service identity (User=${user}, KUBECONFIG=${kubeconfig})..."
 	run_root install -d -m 0755 "${SYSTEMD_DROPIN_DIR}"
 	run_root tee "${SYSTEMD_DROPIN}" >/dev/null <<EOF
-# Generated by install-kcontext.sh — re-run install to refresh
+# Generated by install-alertbox.sh — re-run install to refresh
 [Service]
 User=${user}
 Group=${group}
@@ -293,7 +293,7 @@ EOF
 
 verify_service_started() {
 	local elapsed=0 stable=0 state
-	# kcontext may spend ~5s on oc apply before exiting on auth errors.
+	# alertbox may spend ~5s on oc apply before exiting on auth errors.
 	while (( elapsed < 20 )); do
 		state="$(run_root systemctl is-active "${SERVICE_NAME}" 2>/dev/null || true)"
 		case "${state}" in
@@ -367,7 +367,7 @@ echo "==> Building ${SERVICE_NAME}..."
 if [[ "${NO_TEST}" == false ]]; then
 	go test ./...
 fi
-go build -o "${BUILD_OUTPUT}" ./cmd/kcontext
+go build -o "${BUILD_OUTPUT}" ./cmd/alertbox
 
 echo "==> Installing binary to ${BIN_DEST}..."
 run_root install -m 0755 "${BUILD_OUTPUT}" "${BIN_DEST}"
@@ -386,12 +386,12 @@ run_root install -d -m 0750 "${ENV_DIR}"
 if [[ -f "${ENV_FILE}" ]]; then
 	echo "    Keeping existing ${ENV_FILE}"
 else
-	run_root install -m 0640 "${SCRIPT_DIR}/kcontext.env.example" "${ENV_FILE}"
+	run_root install -m 0640 "${SCRIPT_DIR}/alertbox.env.example" "${ENV_FILE}"
 	echo "    Created ${ENV_FILE} from example — edit before production use"
 fi
-set_env_var "${ENV_FILE}" KCONTEXT_DEPLOY_DIR "${DEPLOY_DEST}"
-echo "    Set KCONTEXT_DEPLOY_DIR=${DEPLOY_DEST}"
-run_root install -m 0644 "${SCRIPT_DIR}/kcontext.service" "${SYSTEMD_UNIT}"
+set_env_var "${ENV_FILE}" ALERTBOX_DEPLOY_DIR "${DEPLOY_DEST}"
+echo "    Set ALERTBOX_DEPLOY_DIR=${DEPLOY_DEST}"
+run_root install -m 0644 "${SCRIPT_DIR}/alertbox.service" "${SYSTEMD_UNIT}"
 
 validate_prerequisites || exit 1
 

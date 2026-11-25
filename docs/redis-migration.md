@@ -6,12 +6,12 @@ Move alert history from a local Redis instance to a remote one (e.g. a bastion h
 
 | Key | Type | Needed for dashboard? |
 |-----|------|----------------------|
-| `kcontext:alerts` | List | **Yes** — JSON `StoredAlert` records (newest first) |
-| `kcontext:active-fingerprints` | Set | No — poll dedup only |
-| `kcontext:fp-state` | Hash | No — poll dedup only |
-| `kcontext:fp-meta` | Hash | No — resolved detection for polling |
+| `alertbox:alerts` | List | **Yes** — JSON `StoredAlert` records (newest first) |
+| `alertbox:active-fingerprints` | Set | No — poll dedup only |
+| `alertbox:fp-state` | Hash | No — poll dedup only |
+| `alertbox:fp-meta` | Hash | No — resolved detection for polling |
 
-For dashboard history, copying **`kcontext:alerts`** is enough. Copy the other three only if you also run Alertmanager polling on the destination and want dedup/resolved state preserved.
+For dashboard history, copying **`alertbox:alerts`** is enough. Copy the other three only if you also run Alertmanager polling on the destination and want dedup/resolved state preserved.
 
 ## Why not DUMP / RESTORE?
 
@@ -31,17 +31,17 @@ Set `REMOTE` to your destination host, then export, transfer, and import:
 REMOTE=root@your-bastion.example.com
 
 # export from local Redis
-redis-cli --raw LRANGE kcontext:alerts 0 -1 > /tmp/kcontext_alerts.txt
+redis-cli --raw LRANGE alertbox:alerts 0 -1 > /tmp/alertbox_alerts.txt
 
 # transfer to remote
-scp /tmp/kcontext_alerts.txt "$REMOTE:/tmp/"
+scp /tmp/alertbox_alerts.txt "$REMOTE:/tmp/"
 
-# import on remote (replaces existing kcontext:alerts)
-ssh "$REMOTE" 'redis-cli DEL kcontext:alerts
+# import on remote (replaces existing alertbox:alerts)
+ssh "$REMOTE" 'redis-cli DEL alertbox:alerts
 while IFS= read -r line; do
-  [ -n "$line" ] && redis-cli LPUSH kcontext:alerts "$line"
-done < /tmp/kcontext_alerts.txt
-rm /tmp/kcontext_alerts.txt'
+  [ -n "$line" ] && redis-cli LPUSH alertbox:alerts "$line"
+done < /tmp/alertbox_alerts.txt
+rm /tmp/alertbox_alerts.txt'
 ```
 
 `LRANGE` returns newest-first; `LPUSH` preserves that order on the destination.
@@ -49,31 +49,31 @@ rm /tmp/kcontext_alerts.txt'
 ## Verify
 
 ```bash
-redis-cli LLEN kcontext:alerts
-ssh "$REMOTE" redis-cli LLEN kcontext:alerts
+redis-cli LLEN alertbox:alerts
+ssh "$REMOTE" redis-cli LLEN alertbox:alerts
 ```
 
-Counts should match. On the remote host, start KContext with `REDIS_ADDR` pointing at that Redis instance and open `/?range=7d`.
+Counts should match. On the remote host, start Alertbox with `REDIS_ADDR` pointing at that Redis instance and open `/?range=7d`.
 
 ## Optional: copy poll state
 
 Only needed when running Alertmanager polling on the destination.
 
-**Set** (`kcontext:active-fingerprints`):
+**Set** (`alertbox:active-fingerprints`):
 
 ```bash
-redis-cli SMEMBERS kcontext:active-fingerprints > /tmp/fps.txt
+redis-cli SMEMBERS alertbox:active-fingerprints > /tmp/fps.txt
 scp /tmp/fps.txt "$REMOTE:/tmp/"
-ssh "$REMOTE" 'redis-cli DEL kcontext:active-fingerprints
+ssh "$REMOTE" 'redis-cli DEL alertbox:active-fingerprints
 while IFS= read -r fp; do
-  [ -n "$fp" ] && redis-cli SADD kcontext:active-fingerprints "$fp"
+  [ -n "$fp" ] && redis-cli SADD alertbox:active-fingerprints "$fp"
 done < /tmp/fps.txt'
 ```
 
-**Hashes** (`kcontext:fp-state`, `kcontext:fp-meta`):
+**Hashes** (`alertbox:fp-state`, `alertbox:fp-meta`):
 
 ```bash
-for key in kcontext:fp-state kcontext:fp-meta; do
+for key in alertbox:fp-state alertbox:fp-meta; do
   redis-cli EXISTS "$key" | grep -q '^1$' || continue
   redis-cli HGETALL "$key" > "/tmp/${key//:/_}.txt"
   scp "/tmp/${key//:/_}.txt" "$REMOTE:/tmp/hash.txt"

@@ -8,13 +8,13 @@ See [alert-flow.md](alert-flow.md) for how webhook ingest fits alongside polling
 
 ```yaml
 receivers:
-  - name: kcontext
+  - name: alertbox
     webhook_configs:
-      - url: http://kcontext:8083/webhook
+      - url: http://alertbox:8083/webhook
         send_resolved: true
 ```
 
-Use the in-cluster service URL when KContext runs on the cluster, or a reachable host/port for local dev.
+Use the in-cluster service URL when Alertbox runs on the cluster, or a reachable host/port for local dev.
 
 ## Webhook-only mode
 
@@ -22,7 +22,7 @@ If you only use webhooks (no polling), disable the poller:
 
 ```bash
 export ALERTMANAGER_URL=""
-go run ./cmd/kcontext
+go run ./cmd/alertbox
 ```
 
 Prerequisites: Go and Redis only — no `oc` or Alertmanager API access required.
@@ -33,7 +33,7 @@ Prerequisites: Go and Redis only — no `oc` or Alertmanager API access required
 ./docs/test-webhook.sh
 ```
 
-Payload: [webhook-payload.json](webhook-payload.json). Override the target with `KCONTEXT_URL` (default `http://localhost:8083`).
+Payload: [webhook-payload.json](webhook-payload.json). Override the target with `ALERTBOX_URL` (default `http://localhost:8083`).
 
 Refresh the dashboard at [http://localhost:8083/](http://localhost:8083/) to see the alert.
 
