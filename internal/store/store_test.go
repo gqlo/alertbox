@@ -1,4 +1,4 @@
-package alertbox_test
+package store_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/gqlo/alertbox"
+	"github.com/gqlo/alertbox/internal/store"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,7 +14,7 @@ func TestSaveAndList(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 
-	err := s.Save(ctx, alertbox.Alert{
+	err := s.Save(ctx, store.Alert{
 		Status: "firing",
 		Labels: map[string]string{"alertname": "HighCPU", "severity": "warning"},
 	})
@@ -42,7 +42,7 @@ func TestList_respectsLimit(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		if err := s.Save(ctx, alertbox.Alert{Status: "firing", Labels: map[string]string{"alertname": "A"}}); err != nil {
+		if err := s.Save(ctx, store.Alert{Status: "firing", Labels: map[string]string{"alertname": "A"}}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -60,7 +60,7 @@ func TestGet(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 
-	if err := s.Save(ctx, alertbox.Alert{Status: "firing", Labels: map[string]string{"alertname": "X"}}); err != nil {
+	if err := s.Save(ctx, store.Alert{Status: "firing", Labels: map[string]string{"alertname": "X"}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,9 +91,9 @@ func TestSyncPolled_newAndDedup(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "abc123"
-	polled := []alertbox.PolledAlert{{
+	polled := []store.PolledAlert{{
 		Fingerprint: fp,
-		Alert: alertbox.Alert{
+		Alert: store.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "DiskFull", "severity": "critical"},
@@ -127,9 +127,9 @@ func TestSyncPolled_resolvedWhenMissing(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "deadbeef"
-	polled := []alertbox.PolledAlert{{
+	polled := []store.PolledAlert{{
 		Fingerprint: fp,
-		Alert: alertbox.Alert{
+		Alert: store.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill", "severity": "warning"},
@@ -162,17 +162,17 @@ func TestSyncPolled_noDuplicateResolvedWhenAlreadyResolved(t *testing.T) {
 	ctx := context.Background()
 
 	fp := "deadbeef"
-	firing := []alertbox.PolledAlert{{
+	firing := []store.PolledAlert{{
 		Fingerprint: fp,
-		Alert: alertbox.Alert{
+		Alert: store.Alert{
 			Status:      "firing",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill"},
 		},
 	}}
-	resolved := []alertbox.PolledAlert{{
+	resolved := []store.PolledAlert{{
 		Fingerprint: fp,
-		Alert: alertbox.Alert{
+		Alert: store.Alert{
 			Status:      "resolved",
 			Fingerprint: fp,
 			Labels:      map[string]string{"alertname": "OOMKill"},
@@ -202,7 +202,7 @@ func TestSyncPolled_noDuplicateResolvedWhenAlreadyResolved(t *testing.T) {
 
 func TestNewStoredFromAlert(t *testing.T) {
 	start := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	stored := alertbox.NewStoredFromAlert(alertbox.Alert{
+	stored := store.NewStoredFromAlert(store.Alert{
 		Status:      "firing",
 		Fingerprint: "fp1",
 		Labels:      map[string]string{"alertname": "Test"},
@@ -228,7 +228,7 @@ func TestList_legacyReceivedAtFormat(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := alertbox.NewAlertStoreWithRedis(rdb)
+	s := store.NewAlertStoreWithRedis(rdb)
 	alerts, err := s.List(ctx, 10)
 	if err != nil {
 		t.Fatal(err)

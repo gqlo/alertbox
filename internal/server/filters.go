@@ -1,4 +1,4 @@
-package alertbox
+package server
 
 import (
 	"net/http"
@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gqlo/alertbox/internal/client"
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 const defaultAlertsPerPage = 200
@@ -31,7 +34,7 @@ type AlertFilters struct {
 }
 
 type AlertsPageData struct {
-	Alerts                  []StoredAlert
+	Alerts                  []store.StoredAlert
 	Count                   int
 	Filtered                int
 	Total                   int
@@ -43,7 +46,7 @@ type AlertsPageData struct {
 	TotalPages              int
 	PageStart               int
 	PageEnd                 int
-	Cluster                 ClusterMeta
+	Cluster                 client.ClusterMeta
 }
 
 // NamespaceAlertRank is alert count for one namespace, sorted by count in RankAlertsByNamespace.
@@ -160,7 +163,7 @@ func (f AlertFilters) Encode() string {
 	return v.Encode()
 }
 
-func UniqueNamespaces(alerts []StoredAlert) []string {
+func UniqueNamespaces(alerts []store.StoredAlert) []string {
 	seen := make(map[string]struct{})
 	for _, a := range alerts {
 		if ns := a.Namespace(); ns != "" {
@@ -175,7 +178,7 @@ func UniqueNamespaces(alerts []StoredAlert) []string {
 	return out
 }
 
-func NamespacesForFilter(alerts []StoredAlert, selected string) []string {
+func NamespacesForFilter(alerts []store.StoredAlert, selected string) []string {
 	ns := UniqueNamespaces(alerts)
 	if selected == "" || selected == NoneNamespaceFilter {
 		return ns
@@ -190,7 +193,7 @@ func NamespacesForFilter(alerts []StoredAlert, selected string) []string {
 	return ns
 }
 
-func AlertsHaveEmptyNamespace(alerts []StoredAlert) bool {
+func AlertsHaveEmptyNamespace(alerts []store.StoredAlert) bool {
 	for _, a := range alerts {
 		if a.Namespace() == "" {
 			return true
@@ -199,7 +202,7 @@ func AlertsHaveEmptyNamespace(alerts []StoredAlert) bool {
 	return false
 }
 
-func RankAlertsByNamespace(alerts []StoredAlert) []NamespaceAlertRank {
+func RankAlertsByNamespace(alerts []store.StoredAlert) []NamespaceAlertRank {
 	counts := make(map[string]int)
 	for _, a := range alerts {
 		counts[a.Namespace()]++
@@ -350,7 +353,7 @@ func (f AlertFilters) Active() bool {
 		f.Namespace != "" || f.Alertname != ""
 }
 
-func (f AlertFilters) Match(a StoredAlert) bool {
+func (f AlertFilters) Match(a store.StoredAlert) bool {
 	if f.Severity != "" && !strings.EqualFold(a.Labels["severity"], f.Severity) {
 		return false
 	}
@@ -467,8 +470,8 @@ func parseFilterTime(raw string, end bool) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-func FilterAlerts(alerts []StoredAlert, f AlertFilters) []StoredAlert {
-	out := make([]StoredAlert, 0, len(alerts))
+func FilterAlerts(alerts []store.StoredAlert, f AlertFilters) []store.StoredAlert {
+	out := make([]store.StoredAlert, 0, len(alerts))
 	for _, a := range alerts {
 		if f.Match(a) {
 			out = append(out, a)
@@ -478,7 +481,7 @@ func FilterAlerts(alerts []StoredAlert, f AlertFilters) []StoredAlert {
 	return out
 }
 
-func sortAlertsByUpdated(alerts []StoredAlert) {
+func sortAlertsByUpdated(alerts []store.StoredAlert) {
 	sort.SliceStable(alerts, func(i, j int) bool {
 		ti := alerts[i].UpdatedDisplayTime()
 		tj := alerts[j].UpdatedDisplayTime()
@@ -489,7 +492,7 @@ func sortAlertsByUpdated(alerts []StoredAlert) {
 	})
 }
 
-func PaginateAlerts(alerts []StoredAlert, page, perPage int) (pageAlerts []StoredAlert, totalPages, pageNum int) {
+func PaginateAlerts(alerts []store.StoredAlert, page, perPage int) (pageAlerts []store.StoredAlert, totalPages, pageNum int) {
 	if perPage <= 0 {
 		perPage = defaultAlertsPerPage
 	}

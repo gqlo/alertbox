@@ -18,20 +18,27 @@ snapshots and AI analysis.
 
 ### Architecture
 
+The code is split into three layered `internal/` packages. Dependencies only
+point downward (`server` → `client` → `store`); nothing lower imports anything
+above it.
+
 - `cmd/alertbox/main.go` — entry point; calls `alertbox.Run()`
-- `run.go` — wires Redis store, HTTP routes, optional poller and Slack
-- `store.go` — Redis persistence, deduplication, `StoredAlert` helpers
-- `handlers.go` — HTTP handlers, embedded HTML dashboard template, webhook receiver
-- `filters.go` — query-param filters, pagination, URL helpers
-- `alertmanager.go` — Alertmanager API client and background polling loop
-- `slack.go` — Slack `chat.postMessage` helper
-- `details.go` — alert detail page handler
-- `clusterinfo.go` / `oc.go` / `octoken.go` / `portforward.go` — `oc` cluster context
-- `branding.go` — dashboard header/branding HTML
-- `tests/` — external test package (`alertbox_test`)
+- `run.go` (root `package alertbox`) — wires store, server, poller; the only
+  place that imports all three internal packages
+- **`internal/store`** — domain types (`Alert`, `StoredAlert`, `PolledAlert`),
+  `AlertStore` Redis persistence + dedup, and alert-time formatting (`timefmt.go`)
+- **`internal/client`** — outbound integrations: Alertmanager API client and
+  poll loop (`alertmanager.go`, `portforward.go`), Slack (`slack.go`), and `oc`
+  cluster context (`oc.go`, `octoken.go`, `clusterinfo.go`)
+- **`internal/server`** — inbound HTTP: handlers + dashboard template
+  (`handlers.go`), filters/pagination (`filters.go`), detail page (`details.go`),
+  snapshot cache (`snapshot.go`), branding (`branding.go`), cluster-meta caching
+  (`clustermeta.go`)
 - `docs/` — operator guides; `README.md` is the entry point
 
-Library code is `package alertbox` (import path `github.com/gqlo/alertbox`).
+Each package owns its own `*_test.go` files. Tests that exercise unexported
+behaviour (notably `internal/client`) are white-box (`package client`); the rest
+are black-box (`package store_test`, `package server_test`).
 
 ### Ingest paths
 
@@ -61,8 +68,12 @@ Applies to `**/*.go`.
 
 ### Package layout
 
-- Library code is `package alertbox` at repo root
-- Entry point is `cmd/alertbox/main.go` (`package main`)
+- Three layered packages under `internal/`: `store` (domain + Redis), `client`
+  (outbound integrations), `server` (inbound HTTP). Keep the dependency
+  direction `server → client → store`; never import upward
+- Shared types (`Alert`, `StoredAlert`) live in `internal/store` — the common
+  vocabulary both other packages depend on
+- Entry point is `cmd/alertbox/main.go` (`package main`); `run.go` holds `Run()`
 - One primary concern per file (`store.go`, `handlers.go`, `filters.go`, …)
 - Keep embedded HTML templates in `handlers.go` unless they grow large enough to split
 
@@ -166,12 +177,17 @@ Applies to `tests/**/*.go`.
 
 ### File layout
 
-- Tests live in `tests/` as `package alertbox_test`
-- Import `github.com/gqlo/alertbox` — do not use `package main`
-- Shared fixtures in `tests/helpers_test.go` (`testStore`, `testServer`, `sampleAlert`)
+- Tests live next to the package they cover (`internal/<pkg>/*_test.go`)
+- `internal/client` uses white-box tests (`package client`) so unexported funcs
+  can be tested directly — do not add exported wrappers just to test them
+- `internal/store` and `internal/server` use black-box tests
+  (`package store_test`, `package server_test`)
+- Each package has its own `helpers_test.go` (`testStore`, `testServer`,
+  `sampleAlert`, `unsetEnv`); when a local variable would shadow the `store`
+  package, name it `st`
 - Table-driven tests for filter/parsing logic; `net/http/httptest` for handler tests
 - Redis tests use [miniredis](https://github.com/alicebob/miniredis) via
-  `alertbox.NewAlertStoreWithRedis` — no live Redis required
+  `store.NewAlertStoreWithRedis` — no live Redis required
 
 ### Naming
 

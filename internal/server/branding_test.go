@@ -1,4 +1,4 @@
-package alertbox_test
+package server_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gqlo/alertbox"
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 func assertHeaderIntro(t *testing.T, body string) {
@@ -53,7 +53,7 @@ func TestHandleAlertsPage_includesHeaderIntro(t *testing.T) {
 func TestHandleAlertDetail_includesHeaderIntro(t *testing.T) {
 	s := testServer(t)
 	ctx := context.Background()
-	if err := s.Store().Save(ctx, alertbox.Alert{
+	if err := s.Store().Save(ctx, store.Alert{
 		Status: "firing",
 		Labels: map[string]string{
 			"alertname": "TestAlert",
