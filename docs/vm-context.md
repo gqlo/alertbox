@@ -2,7 +2,7 @@
 
 **Status:** design (not yet implemented)
 
-When a **new firing** alert is VM- or storage-related, KContext asynchronously collects surrounding cluster context, stores a snapshot in Redis, and shows it on the alert detail page.
+When a **new firing** alert is VM- or storage-related, Alertbox asynchronously collects surrounding cluster context, stores a snapshot in Redis, and shows it on the alert detail page.
 
 This is the first slice of the broader “context bundling” goal in the [README](../README.md).
 
@@ -42,7 +42,7 @@ This is the first slice of the broader “context bundling” goal in the [READM
                     +-----------+-----------+
                                 |
                                 v
-                   Redis kcontext:vm-context:fp
+                   Redis alertbox:vm-context:fp
                                 |
                                 v
                    GET /alert --> Detail panels
@@ -92,7 +92,7 @@ Alert list entries get a new `id` on every store; Alertmanager **fingerprint** i
 
 | Concern | Approach |
 |---------|----------|
-| Dedup while firing | Redis key `kcontext:vm-context:{fingerprint}` — claim with `SET NX` (pending placeholder) or an inflight set so poll does not re-enqueue |
+| Dedup while firing | Redis key `alertbox:vm-context:{fingerprint}` — claim with `SET NX` (pending placeholder) or an inflight set so poll does not re-enqueue |
 | Re-fire after resolve | When the fingerprint leaves the active set (resolved), delete or expire the context claim so a later firing can collect again |
 | Webhook + poll | Same fingerprint key — either path can claim; the other is a no-op |
 | Concurrency | Small worker queue started from `run.go` (bounded goroutines) |
@@ -233,7 +233,7 @@ Pending claim (before worker finishes) may store a stub with empty bodies so the
 
 | Key | Type | Purpose |
 |-----|------|---------|
-| `kcontext:vm-context:{fingerprint}` | String (JSON) | Latest context snapshot (or pending stub) for that fingerprint |
+| `alertbox:vm-context:{fingerprint}` | String (JSON) | Latest context snapshot (or pending stub) for that fingerprint |
 
 See also existing alert keys in [alert-polling.md](alert-polling.md) and [redis-migration.md](redis-migration.md). Context blobs are **optional** to migrate; dashboards still work without them.
 
@@ -241,7 +241,7 @@ See also existing alert keys in [alert-polling.md](alert-polling.md) and [redis-
 
 On [alert detail](endpoints.md) (`GET /alert?id=…`):
 
-- If the alert has a fingerprint, load `kcontext:vm-context:{fingerprint}`.
+- If the alert has a fingerprint, load `alertbox:vm-context:{fingerprint}`.
 - When present, show panels for each non-empty artifact (VMI describe, virt-launcher logs, guest logs, QEMU monitor, PVC/PV/events, node describe / VMI list / sample logs, CSI node logs, optional host journal panels).
 - When pending: short “Collecting context…” note.
 - When `error` is set: show the error; still show any partial output.
@@ -266,7 +266,7 @@ Documented alongside other env vars in [configuration.md](configuration.md) once
 
 ## RBAC
 
-The `kcontext` ServiceAccount needs cluster read access beyond today’s monitoring / CSV meta roles:
+The `alertbox` ServiceAccount needs cluster read access beyond today’s monitoring / CSV meta roles:
 
 | API | Resources | Verbs |
 |-----|-----------|-------|
@@ -314,5 +314,5 @@ Without these permissions, collection writes an `error` on the snapshot; alerts 
 | [webhook-ingest.md](webhook-ingest.md) | Webhook receiver |
 | [endpoints.md](endpoints.md) | `/alert` route |
 | [configuration.md](configuration.md) | Environment variables |
-| [architecture.md](architecture.md) | How KContext works today |
+| [architecture.md](architecture.md) | How Alertbox works today |
 | [redis-migration.md](redis-migration.md) | Copying Redis data between instances |

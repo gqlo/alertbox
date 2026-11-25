@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kcontext-csv-read
+  name: alertbox-csv-read
   namespace: openshift-storage
 rules:
   - apiGroups: [operators.coreos.com]

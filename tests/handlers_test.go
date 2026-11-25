@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestHandleWebhook_methodNotAllowed(t *testing.T) {
@@ -61,7 +61,7 @@ func TestHandleWebhook_savesAlerts(t *testing.T) {
 func TestHandleAlertsPage_GET(t *testing.T) {
 	s := testServer(t)
 	ctx := context.Background()
-	_ = s.Store().Save(ctx, kcontext.Alert{
+	_ = s.Store().Save(ctx, alertbox.Alert{
 		Status: "firing",
 		Labels: map[string]string{"alertname": "TestAlert", "severity": "info", "namespace": "demo"},
 	})
@@ -85,7 +85,7 @@ func TestHandleAlertsPage_GET(t *testing.T) {
 func TestHandleAlertsPage_namespaceRanksRespectFilters(t *testing.T) {
 	s := testServer(t)
 	ctx := context.Background()
-	for _, a := range []kcontext.Alert{
+	for _, a := range []alertbox.Alert{
 		{Status: "firing", Labels: map[string]string{"severity": "critical", "alertname": "CritA", "namespace": "kube-system"}},
 		{Status: "firing", Labels: map[string]string{"severity": "warning", "alertname": "WarnB", "namespace": "openshift-monitoring"}},
 		{Status: "firing", Labels: map[string]string{"severity": "warning", "alertname": "WarnC", "namespace": "openshift-monitoring"}},
@@ -127,7 +127,7 @@ func TestHandleAlertsPage_paginationLastLink(t *testing.T) {
 	s := testServer(t)
 	ctx := context.Background()
 	for i := 0; i < 201; i++ {
-		if err := s.Store().Save(ctx, kcontext.Alert{
+		if err := s.Store().Save(ctx, alertbox.Alert{
 			Status: "firing",
 			Labels: map[string]string{
 				"alertname": "PaginateTest",
@@ -157,11 +157,11 @@ func TestHandleAlertsPage_paginationLastLink(t *testing.T) {
 }
 
 func TestSlackEnabled(t *testing.T) {
-	s := kcontext.NewServer(nil, "", "")
+	s := alertbox.NewServer(nil, "", "")
 	if s.SlackEnabled() {
 		t.Error("empty server should not have slack enabled")
 	}
-	s = kcontext.NewServer(nil, "xoxb-test", "C123")
+	s = alertbox.NewServer(nil, "xoxb-test", "C123")
 	if !s.SlackEnabled() {
 		t.Error("token + channel should enable slack")
 	}

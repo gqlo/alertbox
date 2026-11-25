@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Optional helper: apply KContext OpenShift RBAC and mint a bearer token for manual testing.
-# KContext mints a token automatically on startup — you do not need this script to run the app.
+# Optional helper: apply Alertbox OpenShift RBAC and mint a bearer token for manual testing.
+# Alertbox mints a token automatically on startup — you do not need this script to run the app.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-NAMESPACE="${KCONTEXT_NAMESPACE:-kcontext}"
-SA="${KCONTEXT_SA:-kcontext}"
-DURATION="${KCONTEXT_TOKEN_DURATION:-8760h}"
-TOKEN_FILE="${KCONTEXT_TOKEN_FILE:-}"
+NAMESPACE="${ALERTBOX_NAMESPACE:-alertbox}"
+SA="${ALERTBOX_SA:-alertbox}"
+DURATION="${ALERTBOX_TOKEN_DURATION:-8760h}"
+TOKEN_FILE="${ALERTBOX_TOKEN_FILE:-}"
 WRITE_FILE=false
 
 usage() {
@@ -17,17 +17,17 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Apply deploy/openshift/ RBAC and print a token for manual curl testing.
-KContext mints a token on each startup — this script is optional.
+Alertbox mints a token on each startup — this script is optional.
 
 Options:
-  -n, --namespace NAME   ServiceAccount namespace (default: kcontext)
-  -s, --serviceaccount   ServiceAccount name (default: kcontext)
+  -n, --namespace NAME   ServiceAccount namespace (default: alertbox)
+  -s, --serviceaccount   ServiceAccount name (default: alertbox)
   -d, --duration DUR     Token lifetime for oc create token (default: 8760h / 1 year)
   -f, --token-file PATH  Write token to PATH (mode 0600)
   -h, --help             Show this help
 
 Environment:
-  KCONTEXT_NAMESPACE, KCONTEXT_SA, KCONTEXT_TOKEN_DURATION, KCONTEXT_TOKEN_FILE
+  ALERTBOX_NAMESPACE, ALERTBOX_SA, ALERTBOX_TOKEN_DURATION, ALERTBOX_TOKEN_FILE
 
 Example:
   ./deploy/create-local-token.sh

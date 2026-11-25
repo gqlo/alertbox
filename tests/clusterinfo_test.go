@@ -1,4 +1,4 @@
-package kcontext_test
+package alertbox_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gqlo/kcontext"
+	"github.com/gqlo/alertbox"
 )
 
 func TestFetchClusterMeta_fromFakeOc(t *testing.T) {
@@ -39,7 +39,7 @@ esac
 	}
 	t.Setenv("PATH", dir)
 
-	meta := kcontext.FetchClusterMeta(context.Background())
+	meta := alertbox.FetchClusterMeta(context.Background())
 	if meta.MasterNodes != "1" {
 		t.Errorf("MasterNodes = %q, want 1", meta.MasterNodes)
 	}

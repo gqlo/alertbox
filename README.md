@@ -1,10 +1,10 @@
-# KContext
+# Alertbox
 
-**Repository:** [github.com/gqlo/KContext](https://github.com/gqlo/KContext)
+**Repository:** [github.com/gqlo/alertbox](https://github.com/gqlo/alertbox)
 
 Ingest OpenShift / Kubernetes Alertmanager alerts, store them in Redis, and browse them on a filterable HTML dashboard — with optional Slack notifications and cluster context via `oc`.
 
-When something fires, operators need more than the alert text. KContext gathers surrounding signals into a structured bundle so you can debug faster or hand off a concise summary to an LLM.
+When something fires, operators need more than the alert text. Alertbox gathers surrounding signals into a structured bundle so you can debug faster or hand off a concise summary to an LLM.
 
 ## What it does today
 
@@ -37,7 +37,7 @@ For **webhook-only** use (no polling), you only need Go and Redis — point Aler
 
 ```bash
 export REDIS_ADDR=localhost:6379
-go run ./cmd/kcontext
+go run ./cmd/alertbox
 ```
 
 Open [http://localhost:8083/](http://localhost:8083/).
@@ -49,16 +49,16 @@ Polling defaults to `https://localhost:9094` and starts `oc port-forward` automa
 To build, install, and restart as a background service on Linux:
 
 ```bash
-./utils/install-kcontext.sh
+./utils/install-alertbox.sh
 ```
 
-Re-run the same command after code changes — it rebuilds, overwrites `/usr/local/bin/kcontext`, and restarts the service. See [utils/README.md](utils/README.md) for options, configuration, and `oc` port-forward notes.
+Re-run the same command after code changes — it rebuilds, overwrites `/usr/local/bin/alertbox`, and restarts the service. See [utils/README.md](utils/README.md) for options, configuration, and `oc` port-forward notes.
 
 ## Documentation
 
 | Doc | Description |
 |-----|-------------|
-| [architecture.md](docs/architecture.md) | How KContext works today — pieces and data flow |
+| [architecture.md](docs/architecture.md) | How Alertbox works today — pieces and data flow |
 | [alert-flow.md](docs/alert-flow.md) | Poll vs webhook ingest paths |
 | [webhook-ingest.md](docs/webhook-ingest.md) | Alertmanager webhook receiver and testing |
 | [configuration.md](docs/configuration.md) | Environment variables |

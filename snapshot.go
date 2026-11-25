@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"context"
@@ -15,7 +15,7 @@ const (
 )
 
 func snapshotRefreshInterval() time.Duration {
-	raw := os.Getenv("KCONTEXT_SNAPSHOT_INTERVAL")
+	raw := os.Getenv("ALERTBOX_SNAPSHOT_INTERVAL")
 	if raw == "" {
 		return defaultSnapshotRefreshInterval
 	}

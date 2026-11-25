@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pre-commit hook for KContext
+# Pre-commit hook for Alertbox
 #
 # Install with:
 #   git config core.hooksPath hooks

@@ -1,4 +1,4 @@
-package kcontext
+package alertbox
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	alertsKey          = "kcontext:alerts"
-	activeFingerprints = "kcontext:active-fingerprints"
-	fpStateKey         = "kcontext:fp-state"
-	fpMetaKey          = "kcontext:fp-meta"
+	alertsKey          = "alertbox:alerts"
+	activeFingerprints = "alertbox:active-fingerprints"
+	fpStateKey         = "alertbox:fp-state"
+	fpMetaKey          = "alertbox:fp-meta"
 )
 
 type Alert struct {
@@ -97,7 +97,7 @@ func (a StoredAlert) Severity() string {
 }
 
 // UpdatedDisplayTime returns updatedAt from Alertmanager when available,
-// otherwise when KContext received/stored the alert.
+// otherwise when Alertbox received/stored the alert.
 func (a StoredAlert) UpdatedDisplayTime() time.Time {
 	if !a.UpdatedAt.IsZero() && a.UpdatedAt.Year() >= 1970 {
 		return a.UpdatedAt.UTC()

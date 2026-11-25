@@ -1,13 +1,13 @@
-# How KContext works
+# How Alertbox works
 
 **Scope:** what the running process does **today**. Planned VM context collection is documented separately in [vm-context.md](vm-context.md).
 
-KContext is a single Go process that **ingests OpenShift/Kubernetes Alertmanager alerts**, **stores them in Redis**, and **serves an HTML dashboard** for triage. Optional pieces: Alertmanager polling (with `oc` port-forward + SA token), Slack notifications on webhook, and a cluster-info sidebar via `oc`.
+Alertbox is a single Go process that **ingests OpenShift/Kubernetes Alertmanager alerts**, **stores them in Redis**, and **serves an HTML dashboard** for triage. Optional pieces: Alertmanager polling (with `oc` port-forward + SA token), Slack notifications on webhook, and a cluster-info sidebar via `oc`.
 
 ## Big picture
 
 ```text
-                    External                         kcontext process
+                    External                         alertbox process
   +---------------------------+     +------------------------------------------+
   | Alertmanager              |     | run.go                                   |
   | Slack API                 |     |   |-- alertmanager.go (poller)           |
@@ -20,7 +20,7 @@ KContext is a single Go process that **ingests OpenShift/Kubernetes Alertmanager
            |         |              +-----------------------------------|------+
            |         |                                                  v
            |    portforward.go / octoken.go                          Redis
-           |    (oc port-forward, SA token)                   kcontext:alerts
+           |    (oc port-forward, SA token)                   alertbox:alerts
            |                                                  (+ poll dedup keys)
            +---- poll GET /api/v2/alerts
            +---- POST /webhook  (also optional Slack)
@@ -28,7 +28,7 @@ KContext is a single Go process that **ingests OpenShift/Kubernetes Alertmanager
 
 ## Startup sequence
 
-Entry: [`cmd/kcontext/main.go`](../cmd/kcontext/main.go) → [`Run()`](../run.go).
+Entry: [`cmd/alertbox/main.go`](../cmd/alertbox/main.go) → [`Run()`](../run.go).
 
 1. **Redis** — `NewAlertStore()` pings `REDIS_ADDR` (default `localhost:6379`). Fail fast if unreachable.
 2. **HTTP server** — `NewServer(store, SLACK_TOKEN, SLACK_CHANNEL_ID)`.
@@ -62,10 +62,10 @@ Both ingest paths write the same history list. The dashboard only reads Redis �
 
 | Key | Type | Purpose |
 |-----|------|---------|
-| `kcontext:alerts` | List | JSON `StoredAlert` records, newest first (`LPUSH`) |
-| `kcontext:active-fingerprints` | Set | Fingerprints currently seen as active (poll) |
-| `kcontext:fp-state` | Hash | fingerprint → last status (poll dedup) |
-| `kcontext:fp-meta` | Hash | fingerprint → cached `Alert` JSON (for synthesize-resolved) |
+| `alertbox:alerts` | List | JSON `StoredAlert` records, newest first (`LPUSH`) |
+| `alertbox:active-fingerprints` | Set | Fingerprints currently seen as active (poll) |
+| `alertbox:fp-state` | Hash | fingerprint → last status (poll dedup) |
+| `alertbox:fp-meta` | Hash | fingerprint → cached `Alert` JSON (for synthesize-resolved) |
 
 Copying history between Redis instances: [redis-migration.md](redis-migration.md).
 
@@ -95,10 +95,10 @@ Copying history between Redis instances: [redis-migration.md](redis-migration.md
 
 **How pieces connect:**
 
-1. **Auth** — Bearer from `ALERTMANAGER_TOKEN_FILE`, or auto `oc apply` of [`deploy/openshift/`](../deploy/openshift/) + `oc create token` for SA `kcontext`. Token is also stored for later `oc` cluster queries (`SetClusterAuthToken`).
+1. **Auth** — Bearer from `ALERTMANAGER_TOKEN_FILE`, or auto `oc apply` of [`deploy/openshift/`](../deploy/openshift/) + `oc create token` for SA `alertbox`. Token is also stored for later `oc` cluster queries (`SetClusterAuthToken`).
 2. **Reachability** — For localhost Alertmanager, [`portforward.go`](../portforward.go) runs `oc port-forward` to `alertmanager-main` in `openshift-monitoring` (configurable).
 3. **Fetch** — HTTP GET to Alertmanager API v2; map AM state → `firing` / `suppressed` / `resolved`.
-4. **Dedup** — `SyncPolled` skips writes when fingerprint + status are unchanged. New or changed status → append to `kcontext:alerts` with `source: poll`. Fingerprints that disappear from the API → append a synthetic `resolved` entry using cached meta.
+4. **Dedup** — `SyncPolled` skips writes when fingerprint + status are unchanged. New or changed status → append to `alertbox:alerts` with `source: poll`. Fingerprints that disappear from the API → append a synthetic `resolved` entry using cached meta.
 
 Details: [alert-polling.md](alert-polling.md).
 
@@ -159,7 +159,7 @@ Webhook-only mode does not require `oc` unless you also want the cluster sidebar
 
 | File | Responsibility |
 |------|----------------|
-| `cmd/kcontext/main.go` | Process entry |
+| `cmd/alertbox/main.go` | Process entry |
 | `run.go` | Wire store, poller, routes, listen |
 | `store.go` | Types + Redis persistence / poll dedup |
 | `alertmanager.go` | Poll HTTP client, loop, error recovery |
@@ -173,9 +173,9 @@ Webhook-only mode does not require `oc` unless you also want the cluster sidebar
 | `slack.go` | Slack `chat.postMessage` |
 | `timefmt.go` | Absolute / relative time helpers |
 | `deploy/openshift/` | Manifests applied for local SA token |
-| `tests/` | External test package (`kcontext_test`) |
+| `tests/` | External test package (`alertbox_test`) |
 
-Library import path: `github.com/gqlo/kcontext` (`package kcontext` at repo root).
+Library import path: `github.com/gqlo/alertbox` (`package alertbox` at repo root).
 
 ## Configuration that shapes the live flow
 
@@ -184,7 +184,7 @@ Library import path: `github.com/gqlo/kcontext` (`package kcontext` at repo root
 | Process | `REDIS_ADDR`, `LISTEN_ADDR` |
 | Poll | `ALERTMANAGER_URL`, `ALERTMANAGER_POLL_INTERVAL`, `ALERTMANAGER_TLS_INSECURE`, `ALERTMANAGER_TOKEN_FILE` |
 | Port-forward | `ALERTMANAGER_PORT_FORWARD`, `ALERTMANAGER_PF_*` |
-| Token mint | `KCONTEXT_NAMESPACE`, `KCONTEXT_SA`, `KCONTEXT_TOKEN_DURATION`, `KCONTEXT_DEPLOY_DIR` |
+| Token mint | `ALERTBOX_NAMESPACE`, `ALERTBOX_SA`, `ALERTBOX_TOKEN_DURATION`, `ALERTBOX_DEPLOY_DIR` |
 | Slack | `SLACK_TOKEN`, `SLACK_CHANNEL_ID` |
 
 Full list: [configuration.md](configuration.md).

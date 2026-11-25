@@ -11,7 +11,7 @@ Default URL: [http://localhost:8083/](http://localhost:8083/) (override host/por
 - Row background color reflects severity for firing alerts (critical / warning / info)
 - Namespace values are clickable — filter to that namespace
 - Runbook links come from `annotations.runbook_url` (or `runbook`)
-- **KContext** title links to `/` and clears all filters
+- **Alertbox** title links to `/` and clears all filters
 - 200 alerts per page
 
 ## Filters
