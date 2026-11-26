@@ -242,13 +242,25 @@ Rules:
   commit (do not amend).
 - After committing, run `git status` to verify it succeeded.
 
-Install the hook with:
+Install the hooks with:
 
 ```bash
 git config core.hooksPath hooks
 ```
 
 Update `hooks/pre-commit` when the CI check scope changes.
+
+---
+
+## Pre-push (advisory AI review)
+
+`hooks/pre-push` runs `/code-review` and `/security-review` via the headless
+`claude` CLI when a push touches code (`*.go`, `go.mod`, `go.sum`, `hooks/*`,
+`.github/workflows/*`). It is **advisory only** — findings are printed but the
+push is never blocked. Skip it with `ALERTBOX_SKIP_REVIEW=1 git push`; each
+review is capped by `CLAUDE_REVIEW_TIMEOUT` (default 600s). It needs the `claude`
+CLI and runs it with `--permission-mode bypassPermissions`, so enable it only on
+a trusted workstation.
 
 ---
 

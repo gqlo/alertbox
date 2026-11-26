@@ -57,9 +57,9 @@ type AlertSnapshotCache struct {
 	stopCh    chan struct{}
 }
 
-func newAlertSnapshotCache(store *store.AlertStore) *AlertSnapshotCache {
+func newAlertSnapshotCache(st *store.AlertStore) *AlertSnapshotCache {
 	return &AlertSnapshotCache{
-		store:       store,
+		store:       st,
 		filterStats: make(map[string]filteredAlertView),
 		refreshCh:   make(chan struct{}, 1),
 		stopCh:      make(chan struct{}),
@@ -67,8 +67,8 @@ func newAlertSnapshotCache(store *store.AlertStore) *AlertSnapshotCache {
 }
 
 // NewAlertSnapshotCacheForTest builds a snapshot cache without starting the background refresher.
-func NewAlertSnapshotCacheForTest(store *store.AlertStore) *AlertSnapshotCache {
-	return newAlertSnapshotCache(store)
+func NewAlertSnapshotCacheForTest(st *store.AlertStore) *AlertSnapshotCache {
+	return newAlertSnapshotCache(st)
 }
 
 // StartForTest starts the background refresher (used by tests).
