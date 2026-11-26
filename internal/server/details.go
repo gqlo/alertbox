@@ -1,4 +1,4 @@
-package alertbox
+package server
 
 import (
 	"context"
@@ -8,12 +8,14 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 var alertDetailTemplate = template.Must(template.New("alert-detail").Funcs(template.FuncMap{
-	"fmtTime":     FormatAlertTime,
-	"fmtRelative": FormatRelativeTime,
-	"fmtISO":      FormatTimeISO,
+	"fmtTime":     store.FormatAlertTime,
+	"fmtRelative": store.FormatRelativeTime,
+	"fmtISO":      store.FormatTimeISO,
 	"hasPrefix":   strings.HasPrefix,
 	"headerIntro": headerIntro,
 	"utcClock":    utcClock,
@@ -213,7 +215,7 @@ var alertDetailTemplate = template.Must(template.New("alert-detail").Funcs(templ
 </html>`))
 
 type alertDetailData struct {
-	Alert          StoredAlert
+	Alert          store.StoredAlert
 	BackLink       string
 	LabelKeys      []string
 	AnnotationKeys []string
@@ -246,7 +248,7 @@ func (s *Server) HandleAlertDetail(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	var alert *StoredAlert
+	var alert *store.StoredAlert
 	if s.snapshot != nil {
 		alert = s.snapshot.getByID(id)
 	}

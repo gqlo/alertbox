@@ -1,4 +1,4 @@
-package alertbox
+package client
 
 import (
 	"bytes"
@@ -7,7 +7,8 @@ import (
 	"net/http"
 )
 
-func postSlack(token, channelID string, payload map[string]any) (string, error) {
+// PostSlack posts a chat.postMessage request and returns the message timestamp.
+func PostSlack(token, channelID string, payload map[string]any) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", err

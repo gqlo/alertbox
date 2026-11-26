@@ -6,24 +6,28 @@ import (
 	"net"
 	"net/http"
 	"os"
+
+	"github.com/gqlo/alertbox/internal/client"
+	"github.com/gqlo/alertbox/internal/server"
+	"github.com/gqlo/alertbox/internal/store"
 )
 
 // Run starts the Alertbox HTTP server and optional Alertmanager poller.
 func Run() {
-	store, err := NewAlertStore()
+	st, err := store.NewAlertStore()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	srv := NewServer(store, os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_CHANNEL_ID"))
+	srv := server.NewServer(st, os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_CHANNEL_ID"))
 
-	amSession, err := newAlertmanagerPollSession(store)
+	amSession, err := client.NewPollSession(st)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if amSession != nil {
-		defer amSession.stop()
-		go amSession.run()
+		defer amSession.Stop()
+		go amSession.Run()
 	}
 
 	addr := os.Getenv("LISTEN_ADDR")

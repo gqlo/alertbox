@@ -1,4 +1,4 @@
-package alertbox
+package client
 
 import (
 	"context"
@@ -125,7 +125,9 @@ func resolveAutoServiceAccountToken() (string, error) {
 	return token, nil
 }
 
-func ensureClusterAuthToken() error {
+// EnsureClusterAuthToken resolves and caches a cluster bearer token if one is
+// not already set, from ALERTMANAGER_TOKEN_FILE or by minting a SA token.
+func EnsureClusterAuthToken() error {
 	if clusterAuthTokenValue() != "" {
 		return nil
 	}
@@ -143,14 +145,4 @@ func ensureClusterAuthToken() error {
 	}
 	SetClusterAuthToken(token)
 	return nil
-}
-
-// OpenShiftDeployDir returns the directory passed to oc apply -f for RBAC manifests.
-func OpenShiftDeployDir() string {
-	return saTokenConfigFromEnv().deployDir
-}
-
-// MintServiceAccountToken applies RBAC manifests and mints a token (for tests).
-func MintServiceAccountToken() (string, error) {
-	return resolveAutoServiceAccountToken()
 }
